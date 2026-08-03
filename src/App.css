@@ -1,0 +1,98 @@
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: #444; }
+
+/* ── Smooth transitions ── */
+button, a, input, [role="button"] {
+  transition-property: background-color, border-color, color, opacity, transform, box-shadow;
+  transition-duration: 150ms;
+  transition-timing-function: ease-out;
+}
+
+/* ── Chessboard wrapper ── */
+[data-cy="chessboard"] {
+  border-radius: 0;
+  overflow: hidden;
+  position: relative;
+}
+
+/* ── 3D board perspective container ── */
+.board-3d-wrapper {
+  perspective: 800px;
+  perspective-origin: 50% 30%;
+}
+.board-3d-inner {
+  transform: rotateX(6deg);
+  transform-style: preserve-3d;
+  backface-visibility: hidden;
+}
+
+/* ── 3D pieces: drop shadow + gradient overlay for depth ── */
+[data-cy="chessboard"] img {
+  filter: drop-shadow(1px 2px 3px rgba(0,0,0,0.35));
+  transition: filter 0.2s ease, transform 0.1s ease;
+  image-rendering: auto;
+}
+
+/* 3D square depth effect */
+[data-cy="chessboard"] > div > div > div > div {
+  position: relative;
+}
+
+/* Inner shadow on dark squares for depth */
+[data-cy="chessboard"] .dark-square-inner {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(135deg, rgba(0,0,0,0.15) 0%, transparent 50%, rgba(255,255,255,0.06) 80%);
+}
+
+/* Light squares get a different depth */
+[data-cy="chessboard"] .light-square-inner {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(135deg, rgba(0,0,0,0.06) 0%, transparent 40%, rgba(255,255,255,0.08) 80%);
+}
+
+/* ── Board glow ── */
+.board-glow {
+  position: absolute;
+  inset: -10%;
+  background: radial-gradient(ellipse at 50% 50%, rgba(52,211,153,0.08) 0%, transparent 70%);
+  pointer-events: none;
+  border-radius: 50%;
+  filter: blur(30px);
+}
+
+/* ── 🎨 Piece theme picker ── */
+.theme-picker-overlay {
+  animation: fadeIn 0.15s ease-out;
+}
+.theme-picker-sheet {
+  animation: slideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(100%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+/* ── Selection color ── */
+::selection {
+  background-color: rgba(52, 211, 153, 0.2);
+  color: #fff;
+}
+
+/* ── Prevent text selection on chessboard ── */
+[data-cy="chessboard"] * {
+  user-select: none;
+  -webkit-user-select: none;
+}

@@ -1,0 +1,183 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400;1,600;1,800&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+    --chess-green: #81b64c;
+    --chess-green-hover: #74a544;
+    --chess-green-shadow: #537b30;
+    --chess-dark-bg: #262421;
+    --chess-card-bg: #2b2926;
+    --chess-panel-bg: #1e1c1a;
+  }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: var(--font-sans);
+    background-color: #262421;
+    color: #ffffff;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+  }
+}
+
+/* ── Custom Scrollbar ── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: #1e1c1a; }
+::-webkit-scrollbar-thumb { background: #3d3935; border-radius: 9999px; }
+::-webkit-scrollbar-thumb:hover { background: #81b64c; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* ══════════════════════════════════════════════════
+   AUTHENTIC CHESS.COM BUTTON SYSTEM
+══════════════════════════════════════════════════ */
+
+.btn-chess-green {
+  background-color: #81b64c;
+  color: #ffffff;
+  font-weight: 800;
+  border-bottom: 4px solid #537b30;
+  border-radius: 0.85rem;
+  box-shadow: 0 4px 14px rgba(129, 182, 76, 0.35);
+  transition: all 0.12s ease-in-out;
+}
+.btn-chess-green:hover {
+  background-color: #74a544;
+  box-shadow: 0 6px 18px rgba(129, 182, 76, 0.45);
+}
+.btn-chess-green:active {
+  transform: translateY(3px);
+  border-bottom-width: 0px;
+  box-shadow: none;
+  margin-top: 3px;
+}
+
+.btn-chess-dark {
+  background-color: #312e2b;
+  color: #ffffff;
+  font-weight: 700;
+  border-bottom: 4px solid #1e1c1a;
+  border-radius: 0.85rem;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+  transition: all 0.12s ease-in-out;
+}
+.btn-chess-dark:hover {
+  background-color: #3d3935;
+  color: #ffffff;
+}
+.btn-chess-dark:active {
+  transform: translateY(3px);
+  border-bottom-width: 0px;
+  box-shadow: none;
+  margin-top: 3px;
+}
+
+/* ══════════════════════════════════════════════════
+   PREMIUM TEXTURED WALLPAPERS
+══════════════════════════════════════════════════ */
+
+/* Newspaper Vintage */
+.wallpaper-newspaper {
+  background-color: #262421 !important;
+  background-image:
+    radial-gradient(ellipse 90% 55% at 50% -10%, rgba(129,182,76,0.12) 0%, transparent 65%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='600'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.72' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E") !important;
+  background-size: cover, 300px 300px !important;
+  background-attachment: fixed !important;
+}
+
+/* Walnut Wood Grain */
+.wallpaper-walnut {
+  background-color: #1a1510 !important;
+  background-image:
+    radial-gradient(ellipse 65% 45% at 30% 40%, rgba(120,60,20,0.22) 0%, transparent 60%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Cfilter id='w'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.018 0.075' numOctaves='3' seed='7' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0.55 0.28 0.08 0 0.12  0.28 0.14 0.04 0 0.06  0.12 0.06 0.02 0 0  0 0 0 1 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23w)' opacity='0.2'/%3E%3C/svg%3E") !important;
+  background-size: cover, 400px 400px !important;
+  background-attachment: fixed !important;
+}
+
+/* Cosmic Nebula */
+.wallpaper-cosmos {
+  background-color: #12101e !important;
+  background-image:
+    radial-gradient(ellipse 70% 55% at 15% 15%, rgba(129,182,76,0.18) 0%, transparent 55%),
+    radial-gradient(ellipse 55% 50% at 85% 85%, rgba(168,85,247,0.25) 0%, transparent 50%) !important;
+  background-size: cover, cover !important;
+  background-attachment: fixed !important;
+}
+
+/* Emerald Moss Forest */
+.wallpaper-forest {
+  background-color: #162414 !important;
+  background-image:
+    radial-gradient(ellipse 85% 55% at 50% -5%, rgba(129,182,76,0.25) 0%, transparent 65%) !important;
+  background-size: cover !important;
+  background-attachment: fixed !important;
+}
+
+/* Obsidian Carbon Gold */
+.wallpaper-obsidian {
+  background-color: #1c1a17 !important;
+  background-image:
+    radial-gradient(ellipse 55% 40% at 50% 50%, rgba(245,158,11,0.10) 0%, transparent 70%) !important;
+  background-size: cover !important;
+  background-attachment: fixed !important;
+}
+
+/* Abyss Ocean Waves */
+.wallpaper-ocean {
+  background-color: #0f1d24 !important;
+  background-image:
+    radial-gradient(ellipse 75% 50% at 50% 0%, rgba(20,184,166,0.22) 0%, transparent 60%) !important;
+  background-size: cover !important;
+  background-attachment: fixed !important;
+}
+
+/* ══════════════════════════════════════════════════
+   GLASSMORPHISM SYSTEM
+══════════════════════════════════════════════════ */
+
+.glass-card {
+  background: #2b2926;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 1.5rem;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+}
+
+.glass-pill {
+  background: #2b2926;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 9999px;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.3);
+}
+
+.glass-navbar {
+  background: #1e1c1a;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+}
+
+/* ══════════════════════════════════════════════════
+   3D CHESS PIECES — Cinema-quality drop shadows
+══════════════════════════════════════════════════ */
+
+.chess-piece-3d {
+  filter:
+    drop-shadow(0 7px 10px rgba(0,0,0,0.60))
+    drop-shadow(0 3px 5px rgba(0,0,0,0.45));
+  transition: filter 0.18s ease, transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  will-change: transform, filter;
+}
+
+.chess-piece-3d:hover {
+  filter:
+    drop-shadow(0 12px 20px rgba(0,0,0,0.65))
+    drop-shadow(0 0 10px rgba(129,182,76,0.40));
+  transform: translateY(-3px) scale(1.10);
+  cursor: grab;
+}
