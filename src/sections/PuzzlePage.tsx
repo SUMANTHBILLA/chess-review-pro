@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, type KeyboardEvent } from 'react';
 import { Chessboard, ChessboardProvider } from 'react-chessboard';
 import { useTheme } from '@/hooks/useTheme';
 import { Chess } from 'chess.js';
+import { playMoveSound, playCaptureSound, playCheckSound, playBlunderSound, playBrilliantSound } from '@/utils/soundEffects';
 import {
   Target,
   Trophy,
@@ -472,14 +473,18 @@ export function PuzzlePage() {
     if (playedUci === expectedUci) {
       const gameCopy = new Chess(game.fen());
       try {
-        gameCopy.move({ from: sourceSquare, to: targetSquare, promotion: 'q' });
+        const moveRes = gameCopy.move({ from: sourceSquare, to: targetSquare, promotion: 'q' });
         setGame(gameCopy);
         setFen(gameCopy.fen());
+
+        if (moveRes && moveRes.captured) playCaptureSound();
+        else playMoveSound();
 
         const nextStep = solutionStep + 1;
         if (nextStep >= solution.length) {
           setStatus('correct');
           setStreak(s => s + 1);
+          playBrilliantSound();
 
           if (activeTab === 'levels') {
             const newCorrect = levelCorrectCount + 1;
@@ -529,6 +534,7 @@ export function PuzzlePage() {
     } else {
       setStatus('wrong');
       setStreak(0);
+      playBlunderSound();
 
       if (activeTab === 'rush' && rushActive) {
         setRushLives(l => {

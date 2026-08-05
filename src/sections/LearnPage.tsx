@@ -2,6 +2,7 @@ import { useState, type KeyboardEvent } from 'react';
 import { Chessboard, ChessboardProvider } from 'react-chessboard';
 import { useTheme } from '@/hooks/useTheme';
 import { Chess } from 'chess.js';
+import { playMoveSound, playCaptureSound, playBlunderSound, playBrilliantSound } from '@/utils/soundEffects';
 import { GraduationCap, Award, CheckCircle2, ChevronRight, Check, Play } from 'lucide-react';
 
 interface LessonStep {
@@ -365,10 +366,13 @@ export function LearnPage() {
     if (playedUci === stepToEvaluate.expectedMoveUci) {
       const gameCopy = new Chess(game.fen());
       try {
-        gameCopy.move({ from: sourceSquare, to: targetSquare, promotion: 'q' });
+        const moveRes = gameCopy.move({ from: sourceSquare, to: targetSquare, promotion: 'q' });
         setGame(gameCopy);
         setFen(gameCopy.fen());
         setStepStatus('success');
+
+        if (moveRes && moveRes.captured) playCaptureSound();
+        else playMoveSound();
 
         if (stepToEvaluate.opponentReplyUci) {
           const oppUci = stepToEvaluate.opponentReplyUci;
@@ -377,11 +381,13 @@ export function LearnPage() {
               gameCopy.move({ from: oppUci.slice(0, 2), to: oppUci.slice(2, 4), promotion: 'q' });
               setGame(new Chess(gameCopy.fen()));
               setFen(gameCopy.fen());
+              playMoveSound();
             } catch { /* ignore */ }
           }, 450);
         }
 
         if (stepIndexToEvaluate + 1 >= activeLesson.steps.length) {
+          playBrilliantSound();
           if (!completedLessonIds.includes(activeLesson.id)) {
             setCompletedLessonIds(prev => [...prev, activeLesson.id]);
           }
@@ -392,6 +398,7 @@ export function LearnPage() {
       }
     } else {
       setStepStatus('wrong');
+      playBlunderSound();
       return false;
     }
   };
