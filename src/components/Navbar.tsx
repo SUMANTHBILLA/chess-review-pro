@@ -101,55 +101,55 @@ export function Navbar({
           <button
             onClick={onNavigateLearn}
             title="Grandmaster Academy"
-            className={`p-2 sm:px-3 sm:py-1.5 rounded-xl text-xs font-extrabold flex items-center gap-1.5 transition-all active:scale-95 ${
+            className={`px-2 py-1 sm:px-3 sm:py-1.5 rounded-xl text-[11px] sm:text-xs font-extrabold flex items-center gap-1 transition-all active:scale-95 ${
               currentScreen === 'learn'
                 ? 'bg-[#81b64c] text-white shadow-md'
                 : 'bg-[#262421] text-zinc-400 hover:text-white border border-white/5'
             }`}
           >
-            <GraduationCap className="w-4 h-4" />
-            <span className="hidden sm:inline">Academy</span>
+            <GraduationCap className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            <span className="inline">Academy</span>
           </button>
 
           <button
             onClick={onNavigatePuzzles}
             title="Tactical Puzzles"
-            className={`p-2 sm:px-3 sm:py-1.5 rounded-xl text-xs font-extrabold flex items-center gap-1.5 transition-all active:scale-95 ${
+            className={`px-2 py-1 sm:px-3 sm:py-1.5 rounded-xl text-[11px] sm:text-xs font-extrabold flex items-center gap-1 transition-all active:scale-95 ${
               currentScreen === 'puzzles'
                 ? 'bg-[#81b64c] text-white shadow-md'
                 : 'bg-[#262421] text-zinc-400 hover:text-white border border-white/5'
             }`}
           >
-            <Target className="w-4 h-4" />
-            <span className="hidden sm:inline">Puzzles</span>
+            <Target className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            <span className="inline">Puzzles</span>
           </button>
 
           <button
             onClick={onNavigateStats}
             title="Analytics"
-            className={`p-2 sm:px-3 sm:py-1.5 rounded-xl text-xs font-extrabold flex items-center gap-1.5 transition-all active:scale-95 ${
+            className={`px-2 py-1 sm:px-3 sm:py-1.5 rounded-xl text-[11px] sm:text-xs font-extrabold flex items-center gap-1 transition-all active:scale-95 ${
               currentScreen === 'stats'
                 ? 'bg-[#81b64c] text-white shadow-md'
                 : 'bg-[#262421] text-zinc-400 hover:text-white border border-white/5'
             }`}
           >
-            <BarChart2 className="w-4 h-4" />
-            <span className="hidden sm:inline">Stats</span>
+            <BarChart2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            <span className="hidden xs:inline">Stats</span>
           </button>
 
           <button
             onClick={onOpenThemePicker}
             title="Custom Themes"
-            className="p-2 sm:px-3 sm:py-1.5 rounded-xl bg-[#262421] hover:bg-[#312e2b] text-zinc-300 hover:text-white border border-white/10 transition-all text-xs font-bold flex items-center gap-1.5 active:scale-95"
+            className="px-2 py-1 sm:px-3 sm:py-1.5 rounded-xl bg-[#262421] hover:bg-[#312e2b] text-zinc-300 hover:text-white border border-white/10 transition-all text-[11px] sm:text-xs font-bold flex items-center gap-1 active:scale-95"
           >
-            <Palette className="w-4 h-4 text-amber-400" />
+            <Palette className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-400" />
             <span className="hidden sm:inline">Theme</span>
           </button>
 
           <button
             onClick={handleToggleSound}
             title={muted ? 'Unmute Move Sounds' : 'Mute Move Sounds'}
-            className="p-2 sm:px-2.5 sm:py-1.5 rounded-xl bg-[#262421] hover:bg-[#312e2b] text-zinc-300 hover:text-white border border-white/10 transition-all text-xs font-bold flex items-center gap-1.5 active:scale-95"
+            className="p-1.5 sm:px-2.5 sm:py-1.5 rounded-xl bg-[#262421] hover:bg-[#312e2b] text-zinc-300 hover:text-white border border-white/10 transition-all text-xs font-bold flex items-center gap-1.5 active:scale-95"
           >
             {muted ? <VolumeX className="w-4 h-4 text-rose-400" /> : <Volume2 className="w-4 h-4 text-[#81b64c]" />}
           </button>

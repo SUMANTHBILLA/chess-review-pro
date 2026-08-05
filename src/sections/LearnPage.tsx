@@ -422,30 +422,30 @@ export function LearnPage() {
   return (
     <div className="w-full flex-1 bg-transparent text-zinc-100 flex flex-col justify-between py-3 max-w-6xl mx-auto px-3 selection:bg-[#81b64c]/30 relative">
       {/* Top Header Controls Bar */}
-      <div className="bg-[#2b2926] rounded-2xl border border-white/10 p-3 shrink-0 backdrop-blur-md shadow-md flex items-center justify-between flex-wrap gap-2 mb-2">
-        <div className="flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-xl bg-[#81b64c] flex items-center justify-center text-white font-bold shadow-md">
+      <div className="bg-[#2b2926] rounded-2xl border border-white/10 p-3 shrink-0 backdrop-blur-md shadow-md flex items-center justify-between gap-2 mb-2">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="w-9 h-9 rounded-xl bg-[#81b64c] flex items-center justify-center text-white font-bold shadow-md shrink-0">
             <GraduationCap className="w-5 h-5 text-white" />
           </div>
-          <div>
-            <h1 className="font-extrabold text-sm text-white leading-none">Grandmaster Chess Academy</h1>
-            <span className="text-[11px] text-zinc-400 font-mono">Complete Path: Beginner to GM (0–2500+ ELO)</span>
+          <div className="min-w-0">
+            <h1 className="font-extrabold text-xs sm:text-sm text-white leading-tight truncate">Grandmaster Chess Academy</h1>
+            <span className="text-[10px] sm:text-[11px] text-zinc-400 font-mono block truncate">Complete Path: Beginner to GM (0–2500+ ELO)</span>
           </div>
         </div>
 
-        <div className="flex items-center gap-1.5 bg-[#1e1c1a] border border-zinc-700 px-3 py-1 rounded-full text-xs font-mono font-bold text-[#81b64c]">
-          <Award className="w-4 h-4 text-amber-400" />
+        <div className="flex items-center gap-1.5 bg-[#1e1c1a] border border-zinc-700 px-2.5 py-1 rounded-full text-xs font-mono font-bold text-[#81b64c] shrink-0">
+          <Award className="w-4 h-4 text-amber-400 shrink-0" />
           <span>{completedLessonIds.length} / {COMPLETE_GM_CURRICULUM.length}</span>
         </div>
       </div>
 
       {/* Unified Rounded Category Filter Pill Bar */}
-      <div className="bg-[#2b2926] p-1.5 rounded-full border border-white/10 shadow-md flex items-center gap-1 overflow-x-auto no-scrollbar mb-3">
+      <div className="bg-[#2b2926] p-1.5 rounded-full border border-white/10 shadow-md flex items-center gap-1 overflow-x-auto no-scrollbar mb-3 touch-pan-x">
         {['All', 'Foundations', 'Tactics', 'Openings', 'Strategy', 'Sacrifices', 'GM Endgames'].map(cat => (
           <button
             key={cat}
             onClick={() => setSelectedCategory(cat)}
-            className={`px-4 py-1.5 rounded-full text-xs font-extrabold transition-all shrink-0 active:scale-95 ${
+            className={`px-3 sm:px-4 py-1.5 rounded-full text-[11px] sm:text-xs font-extrabold transition-all shrink-0 active:scale-95 ${
               selectedCategory === cat
                 ? 'bg-[#81b64c] text-white shadow-md'
                 : 'text-zinc-400 hover:text-white hover:bg-white/5'
