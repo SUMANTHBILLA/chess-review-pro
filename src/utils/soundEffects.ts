@@ -20,12 +20,29 @@ function getAudioContext(): AudioContext | null {
   return audioCtx;
 }
 
+/** Auto-unlock AudioContext on the first user interaction (browser autoplay policy requirement) */
+if (typeof window !== 'undefined') {
+  const unlockAudio = () => {
+    const ctx = getAudioContext();
+    if (ctx && ctx.state === 'suspended') {
+      ctx.resume().then(() => {
+        window.removeEventListener('pointerdown', unlockAudio);
+        window.removeEventListener('keydown', unlockAudio);
+        window.removeEventListener('click', unlockAudio);
+      }).catch(() => {});
+    }
+  };
+  window.addEventListener('pointerdown', unlockAudio, { passive: true });
+  window.addEventListener('keydown', unlockAudio, { passive: true });
+  window.addEventListener('click', unlockAudio, { passive: true });
+}
+
 export function isMuted(): boolean {
   try {
-    return localStorage.getItem('chess_sound_muted') === 'true' || soundMuted;
-  } catch {
-    return soundMuted;
-  }
+    const item = localStorage.getItem('chess_sound_muted');
+    if (item !== null) return item === 'true';
+  } catch { /* ignore */ }
+  return soundMuted;
 }
 
 export function setMuted(muted: boolean) {
@@ -35,6 +52,15 @@ export function setMuted(muted: boolean) {
   } catch { /* ignore */ }
 }
 
+export function toggleMuted(): boolean {
+  const next = !isMuted();
+  setMuted(next);
+  if (!next) {
+    playMoveSound();
+  }
+  return next;
+}
+
 /** Standard move click sound */
 export function playMoveSound() {
   if (isMuted()) return;
@@ -42,21 +68,22 @@ export function playMoveSound() {
   if (!ctx) return;
 
   try {
+    const now = ctx.currentTime;
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
 
-    osc.type = 'triangle';
-    osc.frequency.setValueAtTime(320, ctx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(140, ctx.currentTime + 0.05);
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(400, now);
+    osc.frequency.exponentialRampToValueAtTime(160, now + 0.08);
 
-    gain.gain.setValueAtTime(0.35, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.05);
+    gain.gain.setValueAtTime(0.6, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
 
     osc.connect(gain);
     gain.connect(ctx.destination);
 
-    osc.start(ctx.currentTime);
-    osc.stop(ctx.currentTime + 0.05);
+    osc.start(now);
+    osc.stop(now + 0.08);
   } catch { /* ignore */ }
 }
 
@@ -67,21 +94,22 @@ export function playCaptureSound() {
   if (!ctx) return;
 
   try {
+    const now = ctx.currentTime;
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
 
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(440, ctx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(180, ctx.currentTime + 0.08);
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(520, now);
+    osc.frequency.exponentialRampToValueAtTime(180, now + 0.1);
 
-    gain.gain.setValueAtTime(0.5, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.08);
+    gain.gain.setValueAtTime(0.7, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
 
     osc.connect(gain);
     gain.connect(ctx.destination);
 
-    osc.start(ctx.currentTime);
-    osc.stop(ctx.currentTime + 0.08);
+    osc.start(now);
+    osc.stop(now + 0.1);
   } catch { /* ignore */ }
 }
 
@@ -98,13 +126,13 @@ export function playCheckSound() {
     const gain = ctx.createGain();
 
     osc1.type = 'sine';
-    osc2.type = 'triangle';
+    osc2.type = 'sine';
 
     osc1.frequency.setValueAtTime(587.33, now); // D5
     osc2.frequency.setValueAtTime(880, now);    // A5
 
-    gain.gain.setValueAtTime(0.4, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+    gain.gain.setValueAtTime(0.5, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
 
     osc1.connect(gain);
     osc2.connect(gain);
@@ -112,8 +140,8 @@ export function playCheckSound() {
 
     osc1.start(now);
     osc2.start(now);
-    osc1.stop(now + 0.18);
-    osc2.stop(now + 0.18);
+    osc1.stop(now + 0.2);
+    osc2.stop(now + 0.2);
   } catch { /* ignore */ }
 }
 
@@ -129,17 +157,17 @@ export function playBlunderSound() {
     const gain = ctx.createGain();
 
     osc.type = 'sawtooth';
-    osc.frequency.setValueAtTime(220, now);
-    osc.frequency.linearRampToValueAtTime(130, now + 0.2);
+    osc.frequency.setValueAtTime(260, now);
+    osc.frequency.linearRampToValueAtTime(130, now + 0.22);
 
-    gain.gain.setValueAtTime(0.3, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+    gain.gain.setValueAtTime(0.45, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
 
     osc.connect(gain);
     gain.connect(ctx.destination);
 
     osc.start(now);
-    osc.stop(now + 0.2);
+    osc.stop(now + 0.22);
   } catch { /* ignore */ }
 }
 
@@ -157,16 +185,16 @@ export function playBrilliantSound() {
       const gain = ctx.createGain();
 
       osc.type = 'sine';
-      osc.frequency.setValueAtTime(freq, now + idx * 0.05);
+      osc.frequency.setValueAtTime(freq, now + idx * 0.06);
 
-      gain.gain.setValueAtTime(0.3, now + idx * 0.05);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.05 + 0.12);
+      gain.gain.setValueAtTime(0.4, now + idx * 0.06);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.06 + 0.15);
 
       osc.connect(gain);
       gain.connect(ctx.destination);
 
-      osc.start(now + idx * 0.05);
-      osc.stop(now + idx * 0.05 + 0.12);
+      osc.start(now + idx * 0.06);
+      osc.stop(now + idx * 0.06 + 0.15);
     });
   } catch { /* ignore */ }
 }

@@ -1,5 +1,7 @@
-import { Palette, ArrowLeft, Target, BarChart2, GraduationCap } from 'lucide-react';
+import { useState } from 'react';
+import { Palette, ArrowLeft, Target, BarChart2, GraduationCap, Volume2, VolumeX } from 'lucide-react';
 import mainIcon from '@/assets/main-icon.png';
+import { isMuted, toggleMuted } from '@/utils/soundEffects';
 
 interface NavbarProps {
   currentScreen: 'home' | 'review' | 'puzzles' | 'stats' | 'learn';
@@ -26,6 +28,12 @@ export function Navbar({
   onOpenThemePicker,
   gameInfo,
 }: NavbarProps) {
+  const [muted, setMutedState] = useState(() => isMuted());
+
+  const handleToggleSound = () => {
+    const next = toggleMuted();
+    setMutedState(next);
+  };
   return (
     <header className="sticky top-0 z-40 w-full bg-[#1e1c1a] border-b border-white/10 shadow-xl safe-top">
       <div className="max-w-6xl mx-auto px-3 sm:px-6 h-14 flex items-center justify-between">
@@ -136,6 +144,14 @@ export function Navbar({
           >
             <Palette className="w-4 h-4 text-amber-400" />
             <span className="hidden sm:inline">Theme</span>
+          </button>
+
+          <button
+            onClick={handleToggleSound}
+            title={muted ? 'Unmute Move Sounds' : 'Mute Move Sounds'}
+            className="p-2 sm:px-2.5 sm:py-1.5 rounded-xl bg-[#262421] hover:bg-[#312e2b] text-zinc-300 hover:text-white border border-white/10 transition-all text-xs font-bold flex items-center gap-1.5 active:scale-95"
+          >
+            {muted ? <VolumeX className="w-4 h-4 text-rose-400" /> : <Volume2 className="w-4 h-4 text-[#81b64c]" />}
           </button>
         </div>
       </div>
