@@ -38,30 +38,31 @@ export function Navbar({
     <header className="sticky top-0 z-40 w-full bg-[#1e1c1a] border-b border-white/10 shadow-xl safe-top">
       <div className="max-w-6xl mx-auto px-3 sm:px-6 h-14 flex items-center justify-between">
         {/* Left Section: Grandmaster Shield Logo */}
-        <div className="flex items-center gap-3 min-w-0">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
           {currentScreen === 'review' ? (
             <button
               onClick={onNavigateHome}
-              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-[#312e2b] hover:bg-[#3d3935] text-white border border-white/10 transition-all text-xs font-extrabold shrink-0 shadow-md active:scale-95 group"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#312e2b] hover:bg-[#3d3935] text-white border border-white/10 transition-all text-xs font-extrabold shrink-0 shadow-md active:scale-95 group"
             >
               <ArrowLeft className="w-4 h-4 text-[#81b64c] group-hover:-translate-x-0.5 transition-transform" />
-              <span>New Analysis</span>
+              <span className="hidden xs:inline">New Analysis</span>
+              <span className="xs:hidden">New</span>
             </button>
           ) : (
             <button
               onClick={onNavigateHome}
-              className="flex items-center gap-2.5 group focus:outline-none"
+              className="flex items-center gap-2 group focus:outline-none min-w-0"
             >
               {/* Knight/Falcon Logo */}
-              <div className="h-10 sm:h-12 w-auto shrink-0 group-hover:scale-105 transition-transform flex items-center justify-center">
+              <div className="h-9 sm:h-11 w-auto shrink-0 group-hover:scale-105 transition-transform flex items-center justify-center">
                 <img src={mainIcon} alt="Chess Review PRO" className="h-full w-auto object-contain drop-shadow-[0_2px_10px_rgba(129,182,76,0.35)]" />
               </div>
-              <div className="flex flex-col text-left">
-                <span className="font-black text-base text-white tracking-tight leading-none group-hover:text-[#81b64c] transition-colors flex items-center gap-1.5">
-                  <span>Chess Review</span>
-                  <span className="text-[9px] bg-[#81b64c]/20 text-[#81b64c] px-1.5 py-0.2 rounded-full border border-[#81b64c]/30 font-mono font-extrabold">PRO</span>
+              <div className="flex flex-col text-left min-w-0">
+                <span className="font-black text-xs sm:text-base text-white tracking-tight leading-none group-hover:text-[#81b64c] transition-colors flex items-center gap-1">
+                  <span className="truncate">Chess Review</span>
+                  <span className="text-[9px] bg-[#81b64c]/20 text-[#81b64c] px-1.5 py-0.2 rounded-full border border-[#81b64c]/30 font-mono font-extrabold hidden xs:inline shrink-0">PRO</span>
                 </span>
-                <span className="text-[10px] text-zinc-400 font-mono font-semibold leading-none mt-1">
+                <span className="text-[10px] text-zinc-400 font-mono font-semibold leading-none mt-1 hidden sm:block truncate">
                   Grandmaster Studio
                 </span>
               </div>
@@ -70,7 +71,7 @@ export function Navbar({
 
           {/* Game summary header on review page */}
           {currentScreen === 'review' && gameInfo && (
-            <div className="hidden md:flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#262421] border border-white/10 text-xs text-zinc-300 min-w-0 shadow-sm">
+            <div className="hidden lg:flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#262421] border border-white/10 text-xs text-zinc-300 min-w-0 shadow-sm">
               <div className="flex items-center gap-1.5 truncate">
                 <span className="w-2 h-2 rounded-full bg-white shrink-0 shadow-sm" />
                 <span className="font-bold text-white truncate max-w-[120px]">
@@ -101,10 +102,10 @@ export function Navbar({
           <button
             onClick={onNavigateLearn}
             title="Grandmaster Academy"
-            className={`w-9 h-9 sm:w-auto sm:h-auto sm:px-3 sm:py-1.5 rounded-xl text-xs font-extrabold flex items-center justify-center gap-1.5 transition-all active:scale-95 shrink-0 ${
+            className={`w-9 h-9 sm:w-auto sm:h-auto sm:px-3.5 sm:py-1.5 rounded-full text-xs font-extrabold flex items-center justify-center gap-1.5 transition-all active:scale-95 shrink-0 ${
               currentScreen === 'learn'
-                ? 'bg-[#81b64c] text-white shadow-md'
-                : 'bg-[#262421] text-zinc-400 hover:text-white border border-white/5'
+                ? 'bg-[#81b64c] text-white shadow-lg shadow-[#81b64c]/20 border border-[#81b64c]/50'
+                : 'bg-[#262421] text-zinc-400 hover:text-white border border-white/10 hover:border-white/20'
             }`}
           >
             <GraduationCap className="w-4 h-4 shrink-0" />
@@ -114,10 +115,10 @@ export function Navbar({
           <button
             onClick={onNavigatePuzzles}
             title="Tactical Puzzles"
-            className={`w-9 h-9 sm:w-auto sm:h-auto sm:px-3 sm:py-1.5 rounded-xl text-xs font-extrabold flex items-center justify-center gap-1.5 transition-all active:scale-95 shrink-0 ${
+            className={`w-9 h-9 sm:w-auto sm:h-auto sm:px-3.5 sm:py-1.5 rounded-full text-xs font-extrabold flex items-center justify-center gap-1.5 transition-all active:scale-95 shrink-0 ${
               currentScreen === 'puzzles'
-                ? 'bg-[#81b64c] text-white shadow-md'
-                : 'bg-[#262421] text-zinc-400 hover:text-white border border-white/5'
+                ? 'bg-[#81b64c] text-white shadow-lg shadow-[#81b64c]/20 border border-[#81b64c]/50'
+                : 'bg-[#262421] text-zinc-400 hover:text-white border border-white/10 hover:border-white/20'
             }`}
           >
             <Target className="w-4 h-4 shrink-0" />
@@ -127,10 +128,10 @@ export function Navbar({
           <button
             onClick={onNavigateStats}
             title="Analytics"
-            className={`w-9 h-9 sm:w-auto sm:h-auto sm:px-3 sm:py-1.5 rounded-xl text-xs font-extrabold flex items-center justify-center gap-1.5 transition-all active:scale-95 shrink-0 ${
+            className={`w-9 h-9 sm:w-auto sm:h-auto sm:px-3.5 sm:py-1.5 rounded-full text-xs font-extrabold flex items-center justify-center gap-1.5 transition-all active:scale-95 shrink-0 ${
               currentScreen === 'stats'
-                ? 'bg-[#81b64c] text-white shadow-md'
-                : 'bg-[#262421] text-zinc-400 hover:text-white border border-white/5'
+                ? 'bg-[#81b64c] text-white shadow-lg shadow-[#81b64c]/20 border border-[#81b64c]/50'
+                : 'bg-[#262421] text-zinc-400 hover:text-white border border-white/10 hover:border-white/20'
             }`}
           >
             <BarChart2 className="w-4 h-4 shrink-0" />
@@ -140,7 +141,7 @@ export function Navbar({
           <button
             onClick={onOpenThemePicker}
             title="Custom Themes"
-            className="w-9 h-9 sm:w-auto sm:h-auto sm:px-3 sm:py-1.5 rounded-xl bg-[#262421] hover:bg-[#312e2b] text-zinc-300 hover:text-white border border-white/10 transition-all text-xs font-bold flex items-center justify-center gap-1.5 active:scale-95 shrink-0"
+            className="w-9 h-9 sm:w-auto sm:h-auto sm:px-3.5 sm:py-1.5 rounded-full bg-[#262421] hover:bg-[#312e2b] text-zinc-300 hover:text-white border border-white/10 hover:border-white/20 transition-all text-xs font-bold flex items-center justify-center gap-1.5 active:scale-95 shrink-0"
           >
             <Palette className="w-4 h-4 text-amber-400 shrink-0" />
             <span className="hidden sm:inline">Theme</span>
@@ -149,7 +150,7 @@ export function Navbar({
           <button
             onClick={handleToggleSound}
             title={muted ? 'Unmute Move Sounds' : 'Mute Move Sounds'}
-            className="w-9 h-9 sm:w-auto sm:h-auto sm:px-2.5 sm:py-1.5 rounded-xl bg-[#262421] hover:bg-[#312e2b] text-zinc-300 hover:text-white border border-white/10 transition-all text-xs font-bold flex items-center justify-center gap-1.5 active:scale-95 shrink-0"
+            className="w-9 h-9 sm:w-auto sm:h-auto sm:px-3 sm:py-1.5 rounded-full bg-[#262421] hover:bg-[#312e2b] text-zinc-300 hover:text-white border border-white/10 hover:border-white/20 transition-all text-xs font-bold flex items-center justify-center gap-1.5 active:scale-95 shrink-0"
           >
             {muted ? <VolumeX className="w-4 h-4 text-rose-400 shrink-0" /> : <Volume2 className="w-4 h-4 text-[#81b64c] shrink-0" />}
           </button>
