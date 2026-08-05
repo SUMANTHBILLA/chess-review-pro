@@ -13,6 +13,7 @@ export interface SavedReview {
   blackElo: number;
   brilliantCount: number;
   greatCount: number;
+  missCount: number;
   blunderCount: number;
 }
 
@@ -51,12 +52,14 @@ export function saveReviewToStats(review: GameReview, game: ParsedGame) {
     const existingStr = localStorage.getItem('chess_review_history');
     let history: SavedReview[] = existingStr ? JSON.parse(existingStr) : [];
 
-    let brilliant = 0, great = 0, blunder = 0;
+    let brilliant = 0, great = 0, miss = 0, blunder = 0;
     review.moves.forEach(m => {
       if (m.white?.classification === 'brilliant') brilliant++;
       if (m.black?.classification === 'brilliant') brilliant++;
       if (m.white?.classification === 'great') great++;
       if (m.black?.classification === 'great') great++;
+      if (m.white?.classification === 'miss') miss++;
+      if (m.black?.classification === 'miss') miss++;
       if (m.white?.classification === 'blunder') blunder++;
       if (m.black?.classification === 'blunder') blunder++;
     });
@@ -74,6 +77,7 @@ export function saveReviewToStats(review: GameReview, game: ParsedGame) {
       blackElo: review.black.estimatedRating || 1500,
       brilliantCount: brilliant,
       greatCount: great,
+      missCount: miss,
       blunderCount: blunder,
     };
 
@@ -135,9 +139,10 @@ export function getStatsData() {
     const totalGames = history.length;
     const avgAccuracy = Math.round(history.reduce((s, h) => s + (h.whiteAccuracy + h.blackAccuracy) / 2, 0) / totalGames * 10) / 10;
     const peakRating = Math.max(...history.flatMap(h => [h.whiteElo, h.blackElo]));
-    const totalBrilliant = history.reduce((s, h) => s + h.brilliantCount, 0);
-    const totalGreat = history.reduce((s, h) => s + h.greatCount, 0);
-    const totalBlunders = history.reduce((s, h) => s + h.blunderCount, 0);
+    const totalBrilliant = history.reduce((s, h) => s + (h.brilliantCount || 0), 0);
+    const totalGreat = history.reduce((s, h) => s + (h.greatCount || 0), 0);
+    const totalMisses = history.reduce((s, h) => s + (h.missCount || 0), 0);
+    const totalBlunders = history.reduce((s, h) => s + (h.blunderCount || 0), 0);
 
     return {
       totalGames,
@@ -145,6 +150,7 @@ export function getStatsData() {
       peakRating,
       totalBrilliant,
       totalGreat,
+      totalMisses,
       totalBlunders,
       history,
     };

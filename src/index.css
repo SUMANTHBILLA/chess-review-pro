@@ -1,4 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400;1,600;1,800&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -23,6 +22,30 @@
     -webkit-font-smoothing: antialiased;
     min-height: 100vh;
   }
+}
+
+/* ── Visible keyboard focus (accessibility) ── */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[role="button"]:focus-visible {
+  outline: 2px solid var(--chess-green) !important;
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* ── Notch / status-bar safe areas (mobile app) ── */
+.safe-top {
+  padding-top: max(env(safe-area-inset-top), 0px);
+}
+.safe-bottom {
+  padding-bottom: max(env(safe-area-inset-bottom), 0px);
+}
+.safe-x {
+  padding-left: max(env(safe-area-inset-left), 0px);
+  padding-right: max(env(safe-area-inset-right), 0px);
 }
 
 /* ── Custom Scrollbar ── */
@@ -135,6 +158,51 @@
   background-image:
     radial-gradient(ellipse 75% 50% at 50% 0%, rgba(20,184,166,0.22) 0%, transparent 60%) !important;
   background-size: cover !important;
+  background-attachment: fixed !important;
+}
+
+/* Sky Stadium — open-air blue with soft cloud light */
+.wallpaper-stadium {
+  background-color: #0e2f4d !important;
+  background-image:
+    radial-gradient(ellipse 90% 60% at 50% -10%, rgba(125,190,255,0.35) 0%, transparent 65%),
+    radial-gradient(ellipse 60% 45% at 18% 70%, rgba(190,225,255,0.14) 0%, transparent 55%),
+    radial-gradient(ellipse 55% 40% at 82% 30%, rgba(255,255,255,0.12) 0%, transparent 50%),
+    linear-gradient(180deg, #1c5d8f 0%, #0e2f4d 70%, #0a2137 100%) !important;
+  background-size: cover !important;
+  background-attachment: fixed !important;
+}
+
+/* Royal Purple — velvet nebula with gold dust */
+.wallpaper-royal {
+  background-color: #150b22 !important;
+  background-image:
+    radial-gradient(ellipse 75% 55% at 20% 15%, rgba(168,85,247,0.30) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 50% at 85% 80%, rgba(245,158,11,0.14) 0%, transparent 55%),
+    radial-gradient(ellipse 100% 70% at 50% 110%, rgba(88,28,135,0.35) 0%, transparent 70%) !important;
+  background-size: cover !important;
+  background-attachment: fixed !important;
+}
+
+/* Rose Gold Dusk */
+.wallpaper-rose {
+  background-color: #2b0f16 !important;
+  background-image:
+    radial-gradient(ellipse 80% 55% at 50% 0%, rgba(244,114,182,0.20) 0%, transparent 60%),
+    radial-gradient(ellipse 55% 45% at 15% 85%, rgba(245,158,11,0.12) 0%, transparent 55%),
+    radial-gradient(ellipse 70% 50% at 88% 25%, rgba(190,24,93,0.18) 0%, transparent 60%) !important;
+  background-size: cover !important;
+  background-attachment: fixed !important;
+}
+
+/* Midnight Grid — minimal line grid */
+.wallpaper-grid {
+  background-color: #0c0c10 !important;
+  background-image:
+    radial-gradient(ellipse 70% 50% at 50% -10%, rgba(129,182,76,0.10) 0%, transparent 60%),
+    linear-gradient(rgba(255,255,255,0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.045) 1px, transparent 1px) !important;
+  background-size: cover, 44px 44px, 44px 44px !important;
   background-attachment: fixed !important;
 }
 

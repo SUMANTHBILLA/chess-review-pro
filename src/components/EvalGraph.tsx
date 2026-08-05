@@ -35,9 +35,9 @@ export default function EvalGraph({ evals, ply, onSeek }: EvalGraphProps) {
   return (
     <div className="w-full bg-zinc-950/80 rounded-2xl border border-white/10 p-2 shadow-inner">
       <div className="flex items-center justify-between text-[10px] text-zinc-400 font-mono mb-1 px-1">
-        <span className="text-emerald-400 font-bold">White Advantage (+)</span>
+        <span className="text-[#81b64c] font-bold">White Advantage (+)</span>
         <span>Click Graph to Seek Move</span>
-        <span className="text-rose-400 font-bold">Black Advantage (-)</span>
+        <span className="text-red-400 font-bold">Black Advantage (-)</span>
       </div>
       <svg
         className="w-full cursor-pointer overflow-visible select-none"
@@ -65,9 +65,11 @@ export default function EvalGraph({ evals, ply, onSeek }: EvalGraphProps) {
           y2={H}
           stroke="#38bdf8"
           strokeWidth={2}
-          className="transition-all duration-150"
+          strokeOpacity={0.7}
+          className="transition-all duration-300"
+          style={{ transitionTimingFunction: 'cubic-bezier(0.34, 1.3, 0.5, 1)' }}
         />
-        <circle cx={x(ply)} cy={y(evals[ply] || 0)} r="4" fill="#38bdf8" stroke="#ffffff" strokeWidth="1.5" />
+        <circle cx={x(ply)} cy={y(evals[ply] || 0)} r="4" fill="#38bdf8" stroke="#ffffff" strokeWidth="1.5" className="animate-marker-pulse transition-all duration-300" style={{ transitionTimingFunction: 'cubic-bezier(0.34, 1.3, 0.5, 1)' }} />
       </svg>
     </div>
   );

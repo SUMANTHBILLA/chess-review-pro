@@ -71,7 +71,7 @@ export default function ExplorePanel({ fen, onPlay }: ExplorePanelProps) {
           <span className="text-[10px] text-neutral-500 uppercase tracking-wider font-medium">Opening Explorer</span>
         </div>
         {data?.opening && (
-          <span className="text-[10px] text-emerald-400 truncate max-w-[150px]">{data.opening}</span>
+          <span className="text-[10px] text-[#81b64c] truncate max-w-[150px]">{data.opening}</span>
         )}
       </div>
       {loading ? (

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, type KeyboardEvent } from 'react';
 import { Chessboard, ChessboardProvider } from 'react-chessboard';
 import { useTheme } from '@/hooks/useTheme';
 import { Chess } from 'chess.js';
@@ -28,6 +28,12 @@ import {
   Play,
   Heart,
   TrendingUp,
+  Flame,
+  GraduationCap,
+  AlertTriangle,
+  Puzzle,
+  BarChart3,
+  Timer,
 } from 'lucide-react';
 
 interface LichessPuzzle {
@@ -99,16 +105,14 @@ function getSmartHintText(puzzle: any, step: number): string {
   if (!puzzle) return 'Look closely at the position for tactical opportunities.';
   const solution = getPuzzleSolution(puzzle);
   const nextMove = solution[step];
+  const themeStr = puzzle.theme || puzzle.themes || 'tactics';
+
   if (!nextMove || nextMove.length < 4) {
-    const themeStr = puzzle.theme || puzzle.themes || 'tactics';
     return `Look for tactical motifs: ${themeStr}`;
   }
 
   const fromSq = nextMove.slice(0, 2).toUpperCase();
-  const toSq = nextMove.slice(2, 4).toUpperCase();
-  const themeStr = puzzle.theme || puzzle.themes || 'Tactical checkmate';
-
-  return `Look at square ${fromSq}! Move piece from ${fromSq} to ${toSq}. (${themeStr})`;
+  return `Focus on square ${fromSq} — what can your piece do from there? (Theme: ${themeStr})`;
 }
 
 // ── Dataset loading ──
@@ -150,6 +154,22 @@ const UNLOCKED_LVL_KEY = 'chessreview:unlockedLevel';
 const STARS_KEY = 'chessreview:levelStars';
 const RUSH_HIGH_KEY = 'chessreview:rushHighScore';
 
+const DIFFICULTY_OFFSETS: Record<string, number> = { Standard: 0, Hard: 200, 'Extra hard': 400, Random: 0 };
+
+function difficultyOffset(difficulty: string): number {
+  if (difficulty === 'Random') return Math.floor(Math.random() * 700) - 300;
+  return DIFFICULTY_OFFSETS[difficulty] ?? 0;
+}
+
+function cardKeyHandler(fn: () => void) {
+  return (e: KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      fn();
+    }
+  };
+}
+
 function loadPuzzleRating(): number {
   try { return Number(localStorage.getItem(RATING_KEY)) || 1200; } catch { return 1200; }
 }
@@ -184,7 +204,6 @@ function saveRushHighScore(s: number) {
 export function PuzzlePage() {
   const { pieces, boardTheme } = useTheme();
   const [allPuzzles, setAllPuzzles] = useState<any[]>([]);
-  const [puzzleRating] = useState(loadPuzzleRating);
   const [recentIds, setRecentIds] = useState<Set<string>>(new Set(loadRecentIds()));
   const [currentPuzzle, setCurrentPuzzle] = useState<LichessPuzzle | null>(null);
   const [status, setStatus] = useState<'solving' | 'correct' | 'wrong'>('solving');
@@ -198,6 +217,7 @@ export function PuzzlePage() {
   const [hintVisible, setHintVisible] = useState(false);
   const [hintSquare, setHintSquare] = useState<string | null>(null);
   const [isLiveLoading, setIsLiveLoading] = useState(false);
+  const [pointsGained, setPointsGained] = useState(12);
 
   // Tab state: 'levels' | 'rated' | 'rush' | 'lichess_live'
   const [activeTab, setActiveTab] = useState<'levels' | 'rated' | 'rush' | 'lichess_live'>('levels');
@@ -209,6 +229,7 @@ export function PuzzlePage() {
   const [levelPuzzleIdx, setLevelPuzzleIdx] = useState(0);
   const [levelCorrectCount, setLevelCorrectCount] = useState(0);
   const [levelCompleteModal, setLevelCompleteModal] = useState(false);
+  const [advanceIn, setAdvanceIn] = useState(0);
   const [selectedLevelCard, setSelectedLevelCard] = useState<PuzzleLevel | null>(null);
 
   // Chess.com Modals & Settings State
@@ -323,6 +344,51 @@ export function PuzzlePage() {
     }
   };
 
+  const startLevelRef = useRef(startLevel);
+  useEffect(() => {
+    startLevelRef.current = startLevel;
+  });
+
+  useEffect(() => {
+    if (!levelCompleteModal) {
+      setAdvanceIn(0);
+      return;
+    }
+    const nextLvl = currentLevelId + 1;
+    if (!(isLevelUnlocked(nextLvl, unlockedLevel, levelStars) && nextLvl <= PUZZLE_LEVELS.length)) return;
+    setAdvanceIn(4);
+    let remaining = 4;
+    const iv = setInterval(() => {
+      remaining -= 1;
+      setAdvanceIn(remaining);
+      if (remaining <= 0) {
+        clearInterval(iv);
+        startLevelRef.current(nextLvl);
+      }
+    }, 1000);
+    return () => clearInterval(iv);
+  }, [levelCompleteModal, currentLevelId]);
+
+  const completeLevel = (correctCount: number) => {
+    const earnedStars = correctCount >= 4 ? 3 : correctCount >= 3 ? 2 : 1;
+    const newStars = { ...levelStars, [currentLevelId]: Math.max(levelStars[currentLevelId] || 0, earnedStars) };
+    setLevelStars(newStars);
+    saveLevelStars(newStars);
+
+    const nextLvl = currentLevelId + 1;
+    if (nextLvl <= 5) {
+      setUnlockedLevel(Math.max(unlockedLevel, nextLvl));
+      saveUnlockedLevel(Math.max(unlockedLevel, nextLvl));
+    } else if (nextLvl > 5 && nextLvl <= PUZZLE_LEVELS.length) {
+      const t1Completed = countCompletedTier1Levels(newStars);
+      if (t1Completed >= 4) {
+        setUnlockedLevel(Math.max(unlockedLevel, nextLvl));
+        saveUnlockedLevel(Math.max(unlockedLevel, nextLvl));
+      }
+    }
+    setLevelCompleteModal(true);
+  };
+
   const advanceLevelPuzzle = () => {
     const lvlObj = PUZZLE_LEVELS.find(l => l.id === currentLevelId) || PUZZLE_LEVELS[0];
     const pool = getPuzzlesForLevel(allPuzzles, lvlObj);
@@ -332,24 +398,7 @@ export function PuzzlePage() {
       setLevelPuzzleIdx(nextIdx);
       setCurrentPuzzle(pool[nextIdx]);
     } else {
-      // Level completed!
-      const earnedStars = levelCorrectCount >= 4 ? 3 : levelCorrectCount >= 3 ? 2 : 1;
-      const newStars = { ...levelStars, [currentLevelId]: Math.max(levelStars[currentLevelId] || 0, earnedStars) };
-      setLevelStars(newStars);
-      saveLevelStars(newStars);
-
-      const nextLvl = currentLevelId + 1;
-      if (nextLvl <= 5) {
-        setUnlockedLevel(Math.max(unlockedLevel, nextLvl));
-        saveUnlockedLevel(Math.max(unlockedLevel, nextLvl));
-      } else if (nextLvl > 5 && nextLvl <= PUZZLE_LEVELS.length) {
-        const t1Completed = countCompletedTier1Levels(newStars);
-        if (t1Completed >= 4) {
-          setUnlockedLevel(Math.max(unlockedLevel, nextLvl));
-          saveUnlockedLevel(Math.max(unlockedLevel, nextLvl));
-        }
-      }
-      setLevelCompleteModal(true);
+      completeLevel(levelCorrectCount);
     }
   };
 
@@ -368,7 +417,7 @@ export function PuzzlePage() {
             fen: data.game.treeParts ? data.game.treeParts[0]?.fen : 'r6k/pp2r2p/4Rp1q/3p4/8/3P2R1/PPP1Q1PP/7K b - - 0 28',
             solution: data.puzzle.solution || ['e7e6'],
             hint: 'Find the highest engine evaluation move sequence.',
-            theme: data.puzzle.themes ? data.puzzle.themes.slice(0, 2).join(' • ') : 'Lichess Daily Tactic 🌐',
+            theme: data.puzzle.themes ? data.puzzle.themes.slice(0, 2).join(' • ') : 'Lichess Daily Tactic',
             description: `Live Daily Lichess Puzzle #${data.puzzle.id}`,
           };
           setCurrentPuzzle(livePuz);
@@ -424,7 +473,16 @@ export function PuzzlePage() {
           setStreak(s => s + 1);
 
           if (activeTab === 'levels') {
-            setLevelCorrectCount(c => c + 1);
+            const newCorrect = levelCorrectCount + 1;
+            setLevelCorrectCount(newCorrect);
+
+            const lvlObj = PUZZLE_LEVELS.find(l => l.id === currentLevelId) || PUZZLE_LEVELS[0];
+            const pool = getPuzzlesForLevel(allPuzzles, lvlObj);
+            if (levelPuzzleIdx >= pool.length - 1) {
+              setTimeout(() => completeLevel(newCorrect), 900);
+            } else {
+              setTimeout(() => advanceLevelPuzzle(), 1600);
+            }
           } else if (activeTab === 'rush' && rushActive) {
             setRushScore(sc => {
               const newSc = sc + 1;
@@ -436,10 +494,10 @@ export function PuzzlePage() {
             });
             setTimeout(() => advanceRushPuzzle(), 600);
           } else {
-            const pointsGained = timerSeconds < 15 ? 18 : 12;
-            const newR = userRating + pointsGained;
-            setUserRating(newR);
-            savePuzzleRating(newR);
+            const pg = timerSeconds < 15 ? 18 : 12;
+            setPointsGained(pg);
+            setUserRating(userRating + pg);
+            savePuzzleRating(userRating + pg);
           }
         } else {
           setSolutionStep(nextStep);
@@ -501,7 +559,7 @@ export function PuzzlePage() {
 
   if (!currentPuzzle) {
     return (
-      <div className="w-full flex-1 bg-[#262421] text-zinc-100 flex flex-col items-center justify-center py-16 px-4">
+      <div className="w-full flex-1 bg-transparent text-zinc-100 flex flex-col items-center justify-center py-16 px-4">
         <Loader2 className="w-8 h-8 animate-spin text-emerald-400 mb-3" />
         <span className="text-xs font-mono text-zinc-400">Loading Chess Puzzles...</span>
       </div>
@@ -509,7 +567,7 @@ export function PuzzlePage() {
   }
 
   return (
-    <div className="w-full flex-1 bg-[#262421] text-zinc-100 flex flex-col justify-between py-3 max-w-6xl mx-auto px-3 selection:bg-emerald-500/30 relative">
+    <div className="w-full flex-1 bg-transparent text-zinc-100 flex flex-col justify-between py-3 max-w-6xl mx-auto px-3 selection:bg-emerald-500/30 relative">
 
       {/* ── CHESS.COM SETTINGS MODAL ── */}
       {showSettingsModal && (
@@ -600,15 +658,15 @@ export function PuzzlePage() {
 
             <div className="text-left space-y-2.5 text-xs text-zinc-300 bg-[#1e1c1a] p-3.5 rounded-xl border border-white/5">
               <div className="flex items-center gap-2.5">
-                <span className="text-base">🧩</span>
+                <Puzzle className="w-4 h-4 text-cyan-400 shrink-0" />
                 <span>Solve puzzles to increase your rating</span>
               </div>
               <div className="flex items-center gap-2.5">
-                <span className="text-base">📊</span>
+                <BarChart3 className="w-4 h-4 text-emerald-400 shrink-0" />
                 <span>Puzzles get more difficult as you get better</span>
               </div>
               <div className="flex items-center gap-2.5">
-                <span className="text-base">⏱️</span>
+                <Timer className="w-4 h-4 text-amber-400 shrink-0" />
                 <span>Solve quickly for maximum time bonus</span>
               </div>
             </div>
@@ -670,39 +728,53 @@ export function PuzzlePage() {
             </div>
             <div>
               <h3 className="font-extrabold text-lg text-white">Level Complete!</h3>
-              <p className="text-xs text-zinc-400 mt-1">You solved {levelCorrectCount} out of 5 puzzles in {activeLevelObj.title}!</p>
+              <p className="text-xs text-zinc-400 mt-1">You solved {levelCorrectCount} out of {activeLevelObj.puzzlesCount} puzzles in {activeLevelObj.title}!</p>
             </div>
 
             <div className="flex justify-center text-amber-400 gap-1 my-2">
               {[1, 2, 3].map(st => (
-                <Star key={st} className={`w-6 h-6 ${st <= (levelCorrectCount >= 5 ? 3 : levelCorrectCount >= 3 ? 2 : 1) ? 'fill-amber-400 text-amber-400' : 'text-zinc-600'}`} />
+                <Star key={st} className={`w-6 h-6 ${st <= (levelCorrectCount >= activeLevelObj.puzzlesCount ? 3 : levelCorrectCount >= 3 ? 2 : 1) ? 'fill-amber-400 text-amber-400' : 'text-zinc-600'}`} />
               ))}
             </div>
 
             {currentLevelId === 5 && tier1CompletedCount < 4 && (
-              <div className="text-xs text-amber-300 bg-amber-500/10 border border-amber-500/30 p-2.5 rounded-2xl font-bold">
-                ⚠️ Complete at least 4 out of 5 Tier 1 Levels to unlock Levels 6–10! ({tier1CompletedCount}/4 Completed)
+              <div className="text-xs text-amber-300 bg-amber-500/10 border border-amber-500/30 p-2.5 rounded-2xl font-bold flex items-center gap-2 text-left">
+                <AlertTriangle className="w-4 h-4 shrink-0" />
+                <span>Complete at least 4 out of 5 Tier 1 Levels to unlock Levels 6–10! ({tier1CompletedCount}/4 Completed)</span>
               </div>
             )}
 
-            <button
-              onClick={() => {
-                setLevelCompleteModal(false);
-                const nextLvl = currentLevelId + 1;
-                if (isLevelUnlocked(nextLvl, unlockedLevel, levelStars) && nextLvl <= PUZZLE_LEVELS.length) {
-                  startLevel(nextLvl);
-                }
-              }}
-              className="w-full py-3 bg-[#81b64c] hover:bg-[#74a544] text-white font-extrabold rounded-full text-xs transition-all shadow-lg active:scale-95 flex items-center justify-center gap-2"
-            >
-              <span>{isLevelUnlocked(currentLevelId + 1, unlockedLevel, levelStars) && currentLevelId < PUZZLE_LEVELS.length ? 'Next Level ➔' : 'View Level Map'}</span>
-            </button>
+            {isLevelUnlocked(currentLevelId + 1, unlockedLevel, levelStars) && currentLevelId < PUZZLE_LEVELS.length ? (
+              <>
+                <button
+                  onClick={() => {
+                    setLevelCompleteModal(false);
+                    startLevel(currentLevelId + 1);
+                  }}
+                  className="w-full py-3 bg-[#81b64c] hover:bg-[#74a544] text-white font-extrabold rounded-full text-xs transition-all shadow-lg active:scale-95 flex items-center justify-center gap-2"
+                >
+                  <span>Next Level ➔</span>
+                </button>
+                <p className="text-[10px] text-zinc-500 font-mono">
+                  {PUZZLE_LEVELS[currentLevelId]
+                    ? `Auto-starting ${PUZZLE_LEVELS[currentLevelId].title.split(':')[0]} in ${advanceIn}s…`
+                    : 'Auto-starting next level…'}
+                </p>
+              </>
+            ) : (
+              <button
+                onClick={() => setLevelCompleteModal(false)}
+                className="w-full py-3 bg-[#81b64c] hover:bg-[#74a544] text-white font-extrabold rounded-full text-xs transition-all shadow-lg active:scale-95 flex items-center justify-center gap-2"
+              >
+                <span>View Level Map</span>
+              </button>
+            )}
           </div>
         </div>
       )}
 
       {/* Top Header Controls Bar */}
-      <div className="bg-[#2b2926] rounded-2xl border border-white/10 p-3 shrink-0 backdrop-blur-md shadow-md flex items-center justify-between mb-2">
+      <div className="bg-[#2b2926] rounded-2xl border border-white/10 p-3 shrink-0 backdrop-blur-md shadow-md flex items-center justify-between flex-wrap gap-2 mb-2">
         <div className="flex items-center gap-2.5">
           <div className="w-9 h-9 rounded-xl bg-[#81b64c] flex items-center justify-center text-zinc-950 font-bold shadow-md">
             <Target className="w-5 h-5 text-white" />
@@ -723,15 +795,9 @@ export function PuzzlePage() {
             </div>
           )}
 
-          {activeTab === 'rush' && (
-            <div className="flex items-center gap-1 bg-amber-500/20 border border-amber-500/40 px-3 py-1 rounded-full font-mono text-xs text-amber-300 font-black shadow-sm">
-              <Zap className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-              <span>Score: {rushScore}</span>
-            </div>
-          )}
-
           <div className="flex items-center gap-1 bg-[#1e1c1a] border border-zinc-700 px-2 py-1 rounded-full font-mono text-xs text-amber-400 font-bold shadow-sm">
-            <span>🔥 {streak}</span>
+            <Flame className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+            <span>{streak}</span>
           </div>
           <button
             onClick={() => setSoundEnabled(!soundEnabled)}
@@ -835,7 +901,7 @@ export function PuzzlePage() {
                 className="px-4 py-1 bg-amber-500 hover:bg-amber-400 text-black font-extrabold rounded-full text-xs transition-all shadow-md active:scale-95 flex items-center gap-1"
               >
                 <Zap className="w-3.5 h-3.5 fill-black" />
-                <span>Start Rush ⚡</span>
+                <span>Start Rush</span>
               </button>
             )}
           </div>
@@ -852,8 +918,8 @@ export function PuzzlePage() {
           {showPuzzleGoals && (
             <div className="w-full max-w-[min(100%,430px)] bg-[#2b2926] border border-white/10 rounded-2xl p-2.5 flex items-center gap-3 shadow-lg">
               <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-600 to-amber-400 p-0.5 shrink-0 shadow-md">
-                <div className="w-full h-full bg-zinc-900 rounded-[10px] flex items-center justify-center text-lg">
-                  👨‍🏫
+                <div className="w-full h-full bg-zinc-900 rounded-[10px] flex items-center justify-center text-amber-400">
+                  <GraduationCap className="w-5 h-5" />
                 </div>
               </div>
 
@@ -916,13 +982,6 @@ export function PuzzlePage() {
                 </span>
               )}
 
-              {activeTab === 'rush' && (
-                <span className="text-[11px] font-mono text-amber-400 font-black flex items-center gap-1">
-                  <Zap className="w-3.5 h-3.5 fill-amber-400" />
-                  Score: {rushScore}
-                </span>
-              )}
-
               <span className="text-[10px] bg-[#81b64c]/20 text-[#81b64c] border border-[#81b64c]/30 px-2.5 py-0.5 rounded-full font-mono font-bold">
                 {currentPuzzle.rating} ELO
               </span>
@@ -935,8 +994,8 @@ export function PuzzlePage() {
               pieces,
               position: fen,
               boardOrientation,
-              darkSquareStyle: { backgroundColor: boardTheme.dark },
-              lightSquareStyle: { backgroundColor: boardTheme.light },
+              darkSquareStyle: { backgroundColor: boardTheme.dark, backgroundImage: boardTheme.darkTexture },
+              lightSquareStyle: { backgroundColor: boardTheme.light, backgroundImage: boardTheme.lightTexture },
               showNotation: true,
               onPieceDrop: handlePieceDrop,
               squareStyles: hintSquare ? { [hintSquare]: { backgroundColor: 'rgba(234, 179, 8, 0.65)', border: '2px solid #fbbf24' } } : {},
@@ -952,10 +1011,12 @@ export function PuzzlePage() {
               <div>
                 <div className="text-white font-extrabold">
                   {activeTab === 'rush'
-                    ? '⚡ Puzzle Rush Solved! (+1 Score)'
+                    ? 'Puzzle Rush Solved! (+1 Score)'
                     : activeTab === 'levels'
-                    ? `Level Tactic Solved! (${levelCorrectCount}/5)`
-                    : 'Brilliant Tactic Solved! (+15 ELO)'}
+                    ? `Level Tactic Solved! (${levelCorrectCount}/${activeLevelObj.puzzlesCount})`
+                    : collectPuzzlePoints
+                    ? `Tactic Solved! (+${pointsGained} ELO)`
+                    : 'Tactic Solved!'}
                 </div>
                 <span className="text-[10px] text-emerald-300 font-normal">
                   {activeTab === 'rush'
@@ -966,12 +1027,12 @@ export function PuzzlePage() {
             </div>
           )}
 
-          {status === 'wrong' && (
-            <div className="w-full max-w-[min(100%,430px)] bg-red-500/20 border border-red-500/40 rounded-2xl p-2.5 flex items-center gap-2 text-red-300 text-xs font-bold animate-in fade-in shadow-lg">
+          {status === 'wrong' && showMistakeFeedback && (
+            <div className="w-full max-w-[min(100%,430px)] bg-red-500/20 border border-red-500/40 rounded-2xl p-2.5 flex items-center gap-2 text-red-300 text-xs font-bold animate-in fade-in shadow-lg" role="alert">
               <XCircle className="w-5 h-5 text-red-400 shrink-0" />
               <div>
                 <div className="text-white font-extrabold">
-                  {activeTab === 'rush' ? '❌ Missed Tactic! (-1 Life)' : 'Incorrect Move (-10 ELO)'}
+                  {activeTab === 'rush' ? 'Missed Tactic! (-1 Life)' : 'Incorrect Move (-10 ELO)'}
                 </div>
                 <span className="text-[10px] text-red-200 font-normal">
                   {activeTab === 'rush' ? `Lives Remaining: ${rushLives}` : 'Tap Retry below to calculate again!'}
@@ -1035,7 +1096,11 @@ export function PuzzlePage() {
                   return (
                     <div
                       key={lvl.id}
+                      role="button"
+                      tabIndex={unlocked ? 0 : -1}
+                      aria-disabled={!unlocked}
                       onClick={() => unlocked && setSelectedLevelCard(lvl)}
+                      onKeyDown={unlocked ? cardKeyHandler(() => setSelectedLevelCard(lvl)) : undefined}
                       className={`p-3 rounded-2xl border transition-all flex items-center justify-between cursor-pointer ${
                         isCurrent
                           ? 'bg-[#81b64c]/20 border-[#81b64c] shadow-lg ring-2 ring-[#81b64c]/40 scale-[1.01]'
@@ -1106,7 +1171,11 @@ export function PuzzlePage() {
                   return (
                     <div
                       key={lvl.id}
+                      role="button"
+                      tabIndex={unlocked ? 0 : -1}
+                      aria-disabled={!unlocked}
                       onClick={() => unlocked && setSelectedLevelCard(lvl)}
+                      onKeyDown={unlocked ? cardKeyHandler(() => setSelectedLevelCard(lvl)) : undefined}
                       className={`p-3 rounded-2xl border transition-all flex items-center justify-between cursor-pointer ${
                         isCurrent
                           ? 'bg-amber-500/20 border-amber-500 shadow-lg ring-2 ring-amber-400/40 scale-[1.01]'
@@ -1201,9 +1270,10 @@ export function PuzzlePage() {
 
                 {/* Instructions */}
                 <div className="bg-amber-500/10 border border-amber-500/20 p-3 rounded-2xl text-xs text-amber-200 space-y-1">
-                  <div className="font-extrabold flex items-center gap-1.5 text-amber-300">
-                    <span>⚡ How Rush Works:</span>
-                  </div>
+                <div className="font-extrabold flex items-center gap-1.5 text-amber-300">
+                  <Zap className="w-3.5 h-3.5 fill-amber-300" />
+                  <span>How Rush Works:</span>
+                </div>
                   <p className="text-[11px] text-amber-200/80 leading-relaxed">
                     Solve as many tactical puzzles as you can in 3 minutes! You have 3 lives. Each mistake loses 1 life. Good luck!
                   </p>
@@ -1216,7 +1286,7 @@ export function PuzzlePage() {
                 className="w-full py-3.5 bg-amber-500 hover:bg-amber-400 text-black font-black rounded-2xl text-sm transition-all shadow-xl active:scale-95 flex items-center justify-center gap-2"
               >
                 <Zap className="w-5 h-5 fill-black" />
-                <span>{rushActive ? 'Restart Rush ⚡' : 'Start 3-Min Rush ⚡'}</span>
+                <span>{rushActive ? 'Restart Rush' : 'Start 3-Min Rush'}</span>
               </button>
             </div>
           )}
@@ -1241,7 +1311,7 @@ export function PuzzlePage() {
                   <div className="text-4xl font-black text-[#81b64c] font-mono">{userRating}</div>
                   <div className="text-[10px] text-emerald-400 font-mono font-bold flex items-center justify-center gap-1 mt-1">
                     <TrendingUp className="w-3 h-3" />
-                    <span>Calculated using Glicko-2 rating engine</span>
+                    <span>+12 to +18 for a solve, −10 for a miss</span>
                   </div>
                 </div>
 
@@ -1249,19 +1319,22 @@ export function PuzzlePage() {
                 <div className="grid grid-cols-2 gap-3 text-xs">
                   <div className="bg-[#1e1c1a] p-3.5 rounded-2xl border border-white/10 text-center">
                     <span className="text-[10px] text-zinc-400 uppercase font-bold">Active Streak</span>
-                    <div className="text-xl font-extrabold text-amber-400 font-mono mt-0.5">🔥 {streak}</div>
+                    <div className="text-xl font-extrabold text-amber-400 font-mono mt-0.5 flex items-center justify-center gap-1">
+                      <Flame className="w-4 h-4 fill-amber-400 text-amber-400" />
+                      {streak}
+                    </div>
                   </div>
 
                   <div className="bg-[#1e1c1a] p-3.5 rounded-2xl border border-white/10 text-center">
                     <span className="text-[10px] text-zinc-400 uppercase font-bold">Dataset Pool</span>
-                    <div className="text-xl font-extrabold text-cyan-400 font-mono mt-0.5">5,769</div>
+                    <div className="text-xl font-extrabold text-cyan-400 font-mono mt-0.5">{allPuzzles.length.toLocaleString() || '—'}</div>
                   </div>
                 </div>
               </div>
 
               <button
                 onClick={() => {
-                  const puz = pickPuzzle(allPuzzles, puzzleRating, new Set());
+                  const puz = pickPuzzle(allPuzzles, userRating + difficultyOffset(difficultySetting), new Set());
                   if (puz) setCurrentPuzzle(puz);
                 }}
                 className="w-full py-3.5 btn-chess-green text-sm flex items-center justify-center gap-2"
@@ -1288,10 +1361,10 @@ export function PuzzlePage() {
 
                 <div className="bg-[#1e1c1a] border border-white/10 p-4 rounded-2xl space-y-2 text-xs">
                   <div className="font-extrabold text-white flex items-center gap-1.5">
-                    <span>🌐 Live Lichess Tactic #{currentPuzzle.id}</span>
+                    <span>Live Lichess Tactic #{currentPuzzle.id}</span>
                   </div>
                   <p className="text-[11px] text-zinc-400 leading-relaxed">
-                    Fetched directly from Lichess open database servers. Solved by over 100,000 players worldwide today!
+                    Fetched live from Lichess's public puzzle API.
                   </p>
                   <div className="text-[10px] text-[#81b64c] font-mono font-bold pt-1">
                     Theme: {currentPuzzle.theme}
@@ -1304,7 +1377,7 @@ export function PuzzlePage() {
                 disabled={isLiveLoading}
                 className="w-full py-3.5 bg-cyan-600 hover:bg-cyan-500 text-white font-extrabold rounded-2xl text-sm transition-all shadow-xl active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50"
               >
-                <span>{isLiveLoading ? 'Fetching Live API...' : 'Fetch New Live Daily Puzzle 🌐'}</span>
+                <span>{isLiveLoading ? 'Fetching Live API...' : 'Fetch New Live Daily Puzzle'}</span>
               </button>
             </div>
           )}
@@ -1315,13 +1388,15 @@ export function PuzzlePage() {
 
       {/* Sleek Chess.com Style Pill Action Bar */}
       <div className="p-2.5 bg-[#2b2926] border border-white/10 rounded-full shrink-0 backdrop-blur-xl shadow-2xl flex items-center justify-between gap-2 px-3 mt-2">
-        <button
-          onClick={showHintAction}
-          className="flex-1 py-2 rounded-full bg-[#1e1c1a] hover:bg-zinc-800 border border-amber-500/30 text-amber-300 font-bold text-xs flex items-center justify-center gap-1.5 transition-all active:scale-95 shadow-sm"
-        >
-          <Lightbulb className="w-3.5 h-3.5 text-amber-400" />
-          <span>Hint</span>
-        </button>
+        {showChatHints && (
+          <button
+            onClick={showHintAction}
+            className="flex-1 py-2 rounded-full bg-[#1e1c1a] hover:bg-zinc-800 border border-amber-500/30 text-amber-300 font-bold text-xs flex items-center justify-center gap-1.5 transition-all active:scale-95 shadow-sm"
+          >
+            <Lightbulb className="w-3.5 h-3.5 text-amber-400" />
+            <span>Hint</span>
+          </button>
+        )}
 
         <button
           onClick={() => loadPuzzle(currentPuzzle)}
@@ -1341,7 +1416,7 @@ export function PuzzlePage() {
               fetchLiveLichessPuzzle();
             } else if (activeTab === 'rated') {
               const recentSet = new Set(recentIds);
-              const puz = pickPuzzle(allPuzzles, puzzleRating, recentSet);
+              const puz = pickPuzzle(allPuzzles, userRating + difficultyOffset(difficultySetting), recentSet);
               if (puz) {
                 setRecentIds(new Set([...recentIds, puz.id]));
                 saveRecentIds([...recentIds, puz.id]);

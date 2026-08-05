@@ -26,7 +26,7 @@ export function Navbar({
   gameInfo,
 }: NavbarProps) {
   return (
-    <header className="sticky top-0 z-40 w-full bg-[#1e1c1a] border-b border-white/10 shadow-xl">
+    <header className="sticky top-0 z-40 w-full bg-[#1e1c1a] border-b border-white/10 shadow-xl safe-top">
       <div className="max-w-6xl mx-auto px-3 sm:px-6 h-14 flex items-center justify-between">
         {/* Left Section: Grandmaster Shield Logo */}
         <div className="flex items-center gap-3 min-w-0">

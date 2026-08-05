@@ -11,6 +11,8 @@ import {
   History,
   Sparkles,
   Search,
+  AlertCircle,
+  ChessKnight,
 } from 'lucide-react';
 
 interface HomePageProps {
@@ -100,7 +102,7 @@ export function HomePage({ onReview }: HomePageProps) {
   };
 
   return (
-    <div className="w-full flex-1 bg-[#262421] text-zinc-100 flex flex-col items-center justify-center py-6 px-3">
+    <div className="w-full flex-1 bg-transparent text-zinc-100 flex flex-col items-center justify-center py-6 px-3">
       {/* Main Hero Card Container */}
       <div className="w-full max-w-2xl bg-[#2b2926] border border-white/10 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6 text-center">
         
@@ -140,8 +142,9 @@ export function HomePage({ onReview }: HomePageProps) {
           </div>
 
           {error && (
-            <div className="p-3 rounded-xl bg-red-500/15 border border-red-500/30 text-red-300 text-xs font-bold animate-in fade-in">
-              ⚠️ {error}
+            <div role="alert" className="p-3 rounded-xl bg-red-500/15 border border-red-500/30 text-red-300 text-xs font-bold animate-in fade-in flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>{error}</span>
             </div>
           )}
 
@@ -149,17 +152,19 @@ export function HomePage({ onReview }: HomePageProps) {
           <button
             onClick={handleSubmit}
             disabled={analysis.isAnalyzing}
+            aria-live="polite"
             className="w-full btn-chess-green py-3.5 text-sm sm:text-base flex items-center justify-center gap-2 active:scale-98 disabled:opacity-50"
           >
             {analysis.isAnalyzing ? (
               <>
                 <Loader2 className="w-5 h-5 animate-spin text-white" />
-                <span>Evaluating Moves with Neural Engine... ({Math.round(analysis.progress)}%)</span>
+                <span>Evaluating Moves with Stockfish Engine... ({Math.round(analysis.progress)}%)</span>
               </>
             ) : (
               <>
                 <Search className="w-5 h-5" />
-                <span>Start Game Review ➔</span>
+                <span>Start Game Review</span>
+                <ArrowRight className="w-4 h-4" />
               </>
             )}
           </button>
@@ -174,15 +179,16 @@ export function HomePage({ onReview }: HomePageProps) {
             {[
               { label: 'Magnus Carlsen vs Hikaru Nakamura', pgn: '1. e4 e5 2. Nf3 Nc6 3. Bb5 a6 4. Ba4 Nf6 5. O-O Be7 6. Re1 b5 7. Bb3 d6 8. c3 O-O 9. h3 Nb8 10. d4 Nbd7 11. c4 c6 12. cxb5 axb5 13. Nc3 Bb7 14. Bg5 b4 15. Nb1 h6 16. Bh4 c5 17. dxe5 Nxe4 18. Bxe7 Qxe7 19. exd6 Qf6 20. Nbd2 Nxd6 21. Nc4 Nxc4 22. Bxc4 Nb6 23. Ne5 Rae8 24. Bxf7+ Rxf7 25. Nxf7 Rxe1+ 26. Qxe1 Kxf7 27. Qe3 Qg5 28. Qxg5 hxg5 29. b3 Ke6 30. a3 Kd6 31. axb4 cxb4 32. Ra5 Nd5 33. f3 Bc8 34. Kf2 Bf5 35. Ra7 g6 36. Ra6+ Kc5 37. Ke1 Nf4 38. g3 Nxh3 39. Kd2 Kb5 40. Rd6 Kc5 41. Ra6 Nf2 42. g4 Bd3 43. Re6 1/2-1/2' },
               { label: 'Kasparov vs Deep Blue 1997', pgn: '1. e4 c5 2. c3 d5 3. exd5 Qxd5 4. d4 Nf6 5. Nf3 Bg4 6. Be2 e6 7. h3 Bh5 8. O-O Nc6 9. Be3 cxd4 10. cxd4 Bb4 11. a3 Ba5 12. Nc3 Qd6 13. Nb5 Qe7 14. Ne5 Bxe2 15. Qxe2 O-O 16. Rac1 Rac8 17. Bg5 Bb6 18. Bxf6 gxf6 19. Nc4 Rfd8 20. Nxb6 axb6 21. Rfd1 f5 22. Qe3 Qf6 23. d5 Rxd5 24. Rxd5 exd5 25. b3 Kh8 26. Qxb6 Rg8 27. Qc5 d4 28. Nd6 f4 29. Nxb7 Ne5 30. Qd5 f3 31. g3 Nd3 32. Rc7 Re8 33. Nd6 Re1+ 34. Kh2 Nxf2 35. Nxf7+ Kg7 36. Ng5+ Kh6 37. Rxh7+ 1-0' },
-            ].map(sample => (
+            ].map((sample, i) => (
               <button
                 key={sample.label}
                 onClick={() => submitPgn(sample.pgn)}
                 disabled={analysis.isAnalyzing}
-                className="p-3 rounded-2xl bg-[#1e1c1a] hover:bg-[#312e2b] border border-white/10 hover:border-[#81b64c]/40 text-xs font-bold text-white text-left transition-all flex items-center justify-between group active:scale-95"
+                style={{ animationDelay: `${200 + i * 120}ms` }}
+                className="lift-hover p-3 rounded-2xl bg-[#1e1c1a] hover:bg-[#312e2b] border border-white/10 hover:border-[#81b64c]/40 text-xs font-bold text-white text-left transition-all flex items-center justify-between group active:scale-95 animate-slide-in-up"
               >
                 <div className="flex items-center gap-2 truncate">
-                  <span className="text-base">♟️</span>
+                  <ChessKnight className="w-4 h-4 text-[#81b64c] shrink-0" />
                   <span className="truncate group-hover:text-[#81b64c] transition-colors">{sample.label}</span>
                 </div>
                 <ArrowRight className="w-3.5 h-3.5 text-zinc-500 group-hover:text-[#81b64c] shrink-0" />
@@ -210,7 +216,7 @@ export function HomePage({ onReview }: HomePageProps) {
                   className="w-full p-2.5 rounded-xl bg-[#1e1c1a] hover:bg-[#312e2b] border border-white/5 hover:border-[#81b64c]/30 text-xs font-medium text-zinc-200 hover:text-white flex items-center justify-between transition-all group"
                 >
                   <span className="truncate group-hover:text-[#81b64c] transition-colors">{g.label}</span>
-                  <span className="text-[10px] text-zinc-500 font-mono shrink-0 ml-2">Analyze ➔</span>
+                  <span className="text-[10px] text-zinc-500 font-mono shrink-0 ml-2 flex items-center gap-0.5">Analyze <ArrowRight className="w-3 h-3" /></span>
                 </button>
               ))}
             </div>

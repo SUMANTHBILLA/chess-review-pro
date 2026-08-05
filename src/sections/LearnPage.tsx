@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useState, type KeyboardEvent } from 'react';
 import { Chessboard, ChessboardProvider } from 'react-chessboard';
 import { useTheme } from '@/hooks/useTheme';
 import { Chess } from 'chess.js';
-import { GraduationCap, Award, CheckCircle2, ChevronRight } from 'lucide-react';
+import { GraduationCap, Award, CheckCircle2, ChevronRight, Check, Play } from 'lucide-react';
 
 interface LessonStep {
   stepNumber: number;
@@ -70,6 +70,14 @@ const COMPLETE_GM_CURRICULUM: Lesson[] = [
         opponentReplyUci: 'b8c6',
         explanation: 'Perfect! Developing with threat forces Black to react, keeping the initiative.',
       },
+      {
+        stepNumber: 2,
+        prompt: 'Now develop your Bishop to b5 (Bb5) — the Ruy Lopez. It pins Black\'s knight against their king!',
+        fen: 'r1bqkbnr/pppp1ppp/2n5/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R w KQkq - 0 3',
+        expectedMoveUci: 'f1b5',
+        opponentReplyUci: 'a7a6',
+        explanation: 'Excellent! Bb5 develops a piece and puts pressure on the c6 knight. That is 3 pieces developed in 3 moves.',
+      },
     ],
   },
   {
@@ -88,6 +96,14 @@ const COMPLETE_GM_CURRICULUM: Lesson[] = [
         expectedMoveUci: 'e1g1',
         opponentReplyUci: 'd7d6',
         explanation: 'Grandmaster Move! Castling moves your King out of the dangerous center and connects your Rooks.',
+      },
+      {
+        stepNumber: 2,
+        prompt: 'Finish development: bring your Knight to c3 (Nc3) so both knights are in the game.',
+        fen: 'r1bqk2r/ppp2ppp/2np1n2/2b1p3/2B1P3/5N2/PPPP1PPP/RNBQ1RK1 w kq - 5 5',
+        expectedMoveUci: 'b1c3',
+        opponentReplyUci: 'e8g8',
+        explanation: 'Solid! Now both knights are developed and Black has castled too. Development first, attacks later.',
       },
     ],
   },
@@ -123,9 +139,9 @@ const COMPLETE_GM_CURRICULUM: Lesson[] = [
       {
         stepNumber: 1,
         prompt: 'White to move: Play Nc7+ to fork Black\'s King on e8 and Rook on a8!',
-        fen: 'r1bqkb1r/pppp1ppp/2N5/4p3/8/8/PPPP1PPP/RNBQKB1R w KQkq - 0 5',
-        expectedMoveUci: 'c6c7',
-        explanation: 'Brilliant Fork! Black must get out of check, giving you a free Rook capture next turn.',
+        fen: 'rnbqkbnr/pppp1ppp/8/1N2p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 3',
+        expectedMoveUci: 'b5c7',
+        explanation: 'Brilliant Fork! The knight attacks the King and the Rook simultaneously. Black must respond to check, and you win material next move.',
       },
     ],
   },
@@ -183,6 +199,14 @@ const COMPLETE_GM_CURRICULUM: Lesson[] = [
         expectedMoveUci: 'f1c4',
         opponentReplyUci: 'g8f6',
         explanation: 'Classic Opening Choice! Bc4 exerts pressure directly on Black\'s weakest square (f7).',
+      },
+      {
+        stepNumber: 2,
+        prompt: 'Support the center: play d3 to keep your pawn structure flexible.',
+        fen: 'r1bqkb1r/pppp1ppp/2n2n2/4p3/2B1P3/5N2/PPPP1PPP/RNBQKB1R w KQkq - 0 4',
+        expectedMoveUci: 'd2d3',
+        opponentReplyUci: 'd7d6',
+        explanation: 'The Italian setup! d3 keeps the center solid and prepares to reroute the Bishop to e3 or b3 later.',
       },
     ],
   },
@@ -389,11 +413,11 @@ export function LearnPage() {
   };
 
   return (
-    <div className="w-full flex-1 bg-transparent text-zinc-100 flex flex-col justify-between py-3 max-w-xl mx-auto px-3 selection:bg-emerald-500/30">
+    <div className="w-full flex-1 bg-transparent text-zinc-100 flex flex-col justify-between py-3 max-w-xl mx-auto px-3 selection:bg-[#81b64c]/30">
       {/* Header */}
       <div className="bg-zinc-900/90 rounded-2xl border border-white/10 p-3.5 mb-2 shrink-0 backdrop-blur-md shadow-md flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-600 via-emerald-500 to-teal-400 flex items-center justify-center text-zinc-950 font-bold shadow-md">
+          <div className="w-10 h-10 rounded-xl bg-[#81b64c] flex items-center justify-center text-white font-bold shadow-md">
             <GraduationCap className="w-5 h-5" />
           </div>
           <div>
@@ -402,7 +426,7 @@ export function LearnPage() {
           </div>
         </div>
 
-        <div className="flex items-center gap-1.5 bg-zinc-800 border border-zinc-700 px-3 py-1 rounded-xl text-xs font-mono font-bold text-emerald-400">
+        <div className="flex items-center gap-1.5 bg-zinc-800 border border-zinc-700 px-3 py-1 rounded-xl text-xs font-mono font-bold text-[#81b64c]">
           <Award className="w-4 h-4 text-amber-400" />
           <span>{completedLessonIds.length} / {COMPLETE_GM_CURRICULUM.length}</span>
         </div>
@@ -416,7 +440,7 @@ export function LearnPage() {
             onClick={() => setSelectedCategory(cat)}
             className={`px-3 py-1 rounded-xl text-xs font-bold transition-all shrink-0 active:scale-95 ${
               selectedCategory === cat
-                ? 'bg-emerald-500 text-black shadow-md'
+                ? 'bg-[#81b64c] text-white shadow-md'
                 : 'bg-zinc-900 border border-white/10 text-zinc-300 hover:text-white'
             }`}
           >
@@ -432,7 +456,7 @@ export function LearnPage() {
         <div className="bg-zinc-900/90 rounded-2xl border border-white/10 p-3 shadow-xl space-y-2.5">
           <div className="flex items-center justify-between border-b border-white/5 pb-2">
             <div>
-              <span className="text-[10px] text-emerald-400 font-mono font-bold uppercase tracking-wider">
+              <span className="text-[10px] text-[#81b64c] font-mono font-bold uppercase tracking-wider">
                 {activeLesson.chapter}
               </span>
               <h2 className="text-xs font-extrabold text-white">{activeLesson.title}</h2>
@@ -442,8 +466,8 @@ export function LearnPage() {
             </span>
           </div>
 
-          <div className="bg-zinc-950 p-2.5 rounded-xl border border-emerald-500/30 text-xs flex items-center gap-2">
-            <div className="w-6 h-6 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-extrabold shrink-0">
+          <div className="bg-zinc-950 p-2.5 rounded-xl border border-[#81b64c]/30 text-xs flex items-center gap-2">
+            <div className="w-6 h-6 rounded-lg bg-[#81b64c]/20 text-[#81b64c] flex items-center justify-center font-extrabold shrink-0">
               {currentStep.stepNumber}
             </div>
             <p className="text-zinc-200 font-medium leading-snug">{currentStep.prompt}</p>
@@ -454,8 +478,8 @@ export function LearnPage() {
               pieces,
               position: fen,
               boardOrientation: 'white',
-              darkSquareStyle: { backgroundColor: boardTheme.dark },
-              lightSquareStyle: { backgroundColor: boardTheme.light },
+              darkSquareStyle: { backgroundColor: boardTheme.dark, backgroundImage: boardTheme.darkTexture },
+              lightSquareStyle: { backgroundColor: boardTheme.light, backgroundImage: boardTheme.lightTexture },
               showNotation: true,
               onPieceDrop: handlePieceDrop,
             }}>
@@ -464,15 +488,15 @@ export function LearnPage() {
           </div>
 
           {stepStatus === 'success' && (
-            <div className="p-3 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-xs text-emerald-200 space-y-2 animate-in fade-in">
+            <div className="p-3 rounded-xl bg-[#81b64c]/20 border border-[#81b64c]/40 text-xs text-emerald-200 space-y-2 animate-in fade-in">
               <div className="flex items-center justify-between font-bold">
-                <span className="flex items-center gap-1.5 text-emerald-400">
+                <span className="flex items-center gap-1.5 text-[#81b64c]">
                   <CheckCircle2 className="w-4 h-4" />
                   <span>Correct Move Executed!</span>
                 </span>
                 <button
                   onClick={nextStepAction}
-                  className="px-3 py-1 bg-emerald-500 hover:bg-emerald-400 text-black font-bold rounded-lg transition-all shadow-md active:scale-95 flex items-center gap-1 text-[11px]"
+                  className="px-3 py-1 bg-[#81b64c] hover:bg-[#74a544] text-white font-bold rounded-lg transition-all shadow-md active:scale-95 flex items-center gap-1 text-[11px]"
                 >
                   <span>Continue</span>
                   <ChevronRight className="w-3.5 h-3.5" />
@@ -509,21 +533,30 @@ export function LearnPage() {
             return (
               <div
                 key={lesson.id}
+                role="button"
+                tabIndex={0}
+                aria-current={isActive ? 'true' : undefined}
                 onClick={() => loadLesson(lesson)}
+                onKeyDown={(e: KeyboardEvent) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    loadLesson(lesson);
+                  }
+                }}
                 className={`p-3 rounded-2xl border cursor-pointer transition-all flex items-center justify-between text-xs ${
                   isActive
-                    ? 'bg-emerald-500/20 border-emerald-500/50 shadow-md font-bold'
+                    ? 'bg-[#81b64c]/20 border-[#81b64c]/50 shadow-md font-bold'
                     : 'bg-zinc-900/80 border-white/10 hover:bg-zinc-800'
                 }`}
               >
                 <div className="flex items-center gap-2.5 min-w-0">
                   <div className={`w-6 h-6 rounded-lg flex items-center justify-center font-bold text-xs shrink-0 ${
-                    isDone ? 'bg-emerald-500 text-black' : 'bg-zinc-800 text-zinc-400'
+                    isDone ? 'bg-[#81b64c] text-white' : 'bg-zinc-800 text-zinc-400'
                   }`}>
-                    {isDone ? '✓' : '▶'}
+                    {isDone ? <Check className="w-3.5 h-3.5" strokeWidth={3} /> : <Play className="w-3 h-3" />}
                   </div>
                   <div className="min-w-0">
-                    <div className="text-[10px] text-emerald-400 font-mono">{lesson.chapter}</div>
+                    <div className="text-[10px] text-[#81b64c] font-mono">{lesson.chapter}</div>
                     <div className="text-white font-bold truncate text-xs">{lesson.title}</div>
                   </div>
                 </div>

@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Source wallpaper folder (assets are imported from src/assets/backgrounds)
+new bg/

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type CSSProperties } from 'react';
 import { ThemeProvider, useTheme } from '@/hooks/useTheme';
 import { HomePage } from '@/sections/HomePage';
 import { ReviewPage } from '@/sections/ReviewPage';
@@ -23,6 +23,16 @@ function AppInner() {
   const [appState, setAppState] = useState<AppState>({ screen: 'home' });
   const [showThemePicker, setShowThemePicker] = useState(false);
 
+  const bgStyle: CSSProperties | undefined = appBackground.image
+    ? {
+        backgroundColor: appBackground.previewColor,
+        backgroundImage: `url(${appBackground.image})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundAttachment: 'fixed',
+      }
+    : undefined;
+
   const gameInfo =
     appState.screen === 'review'
       ? {
@@ -35,7 +45,10 @@ function AppInner() {
       : undefined;
 
   return (
-    <div className={`min-h-screen ${appBackground.bgClass} text-white flex flex-col selection:bg-emerald-500/30 selection:text-emerald-200 transition-colors duration-300`}>
+    <div
+      style={bgStyle}
+      className={`min-h-screen ${appBackground.bgClass} text-white flex flex-col selection:bg-emerald-500/30 selection:text-emerald-200 transition-colors duration-300`}
+    >
       {/* Top Navbar */}
       <Navbar
         currentScreen={appState.screen}

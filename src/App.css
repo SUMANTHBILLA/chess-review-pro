@@ -18,17 +18,6 @@ button, a, input, [role="button"] {
   position: relative;
 }
 
-/* ── 3D board perspective container ── */
-.board-3d-wrapper {
-  perspective: 800px;
-  perspective-origin: 50% 30%;
-}
-.board-3d-inner {
-  transform: rotateX(6deg);
-  transform-style: preserve-3d;
-  backface-visibility: hidden;
-}
-
 /* ── 3D pieces: drop shadow + gradient overlay for depth ── */
 [data-cy="chessboard"] img {
   filter: drop-shadow(1px 2px 3px rgba(0,0,0,0.35));
@@ -36,35 +25,9 @@ button, a, input, [role="button"] {
   image-rendering: auto;
 }
 
-/* 3D square depth effect */
+/* ── 3D square depth effect ── */
 [data-cy="chessboard"] > div > div > div > div {
   position: relative;
-}
-
-/* Inner shadow on dark squares for depth */
-[data-cy="chessboard"] .dark-square-inner {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: linear-gradient(135deg, rgba(0,0,0,0.15) 0%, transparent 50%, rgba(255,255,255,0.06) 80%);
-}
-
-/* Light squares get a different depth */
-[data-cy="chessboard"] .light-square-inner {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: linear-gradient(135deg, rgba(0,0,0,0.06) 0%, transparent 40%, rgba(255,255,255,0.08) 80%);
-}
-
-/* ── Board glow ── */
-.board-glow {
-  position: absolute;
-  inset: -10%;
-  background: radial-gradient(ellipse at 50% 50%, rgba(52,211,153,0.08) 0%, transparent 70%);
-  pointer-events: none;
-  border-radius: 50%;
-  filter: blur(30px);
 }
 
 /* ── 🎨 Piece theme picker ── */
@@ -85,6 +48,15 @@ button, a, input, [role="button"] {
   to { transform: translateY(0); opacity: 1; }
 }
 
+/* ── Subtle coach avatar bounce ── */
+@keyframes bounce-subtle {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-2px); }
+}
+.animate-bounce-subtle {
+  animation: bounce-subtle 2.5s ease-in-out infinite;
+}
+
 /* ── Selection color ── */
 ::selection {
   background-color: rgba(52, 211, 153, 0.2);
@@ -95,4 +67,118 @@ button, a, input, [role="button"] {
 [data-cy="chessboard"] * {
   user-select: none;
   -webkit-user-select: none;
+}
+
+/* ══════════════════════════════════════════════════
+   MOTION DESIGN SYSTEM — chess.com-grade micro-interactions
+══════════════════════════════════════════════════ */
+
+/* Entrance: pop with springy overshoot */
+@keyframes pop-in {
+  0%   { opacity: 0; transform: scale(0.55); }
+  60%  { opacity: 1; transform: scale(1.06); }
+  100% { opacity: 1; transform: scale(1); }
+}
+.animate-pop-in { animation: pop-in 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+
+/* Entrance: slide from directions with ease-out-back */
+@keyframes slide-in-left {
+  from { opacity: 0; transform: translateX(-14px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+.animate-slide-in-left { animation: slide-in-left 0.35s cubic-bezier(0.16, 1, 0.3, 1) both; }
+
+@keyframes slide-in-right {
+  from { opacity: 0; transform: translateX(14px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+.animate-slide-in-right { animation: slide-in-right 0.35s cubic-bezier(0.16, 1, 0.3, 1) both; }
+
+@keyframes slide-in-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-slide-in-up { animation: slide-in-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) both; }
+
+/* Staggered fade-up for lists/legends */
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-up { animation: fade-up 0.4s ease-out both; }
+
+/* Stacked bar segments grow from the left */
+@keyframes bar-grow {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
+}
+.animate-bar-grow {
+  transform-origin: left center;
+  animation: bar-grow 0.7s cubic-bezier(0.34, 1.3, 0.5, 1) both;
+}
+
+/* Last-move square highlight pulse (replays per navigation) */
+@keyframes square-pulse {
+  0%   { background-color: rgba(59, 130, 246, 0.8); box-shadow: inset 0 0 0 2px rgba(147, 197, 253, 0.9); }
+  100% { background-color: rgba(59, 130, 246, 0.45); box-shadow: inset 0 0 0 0 rgba(147, 197, 253, 0); }
+}
+.animate-square-pulse { animation: square-pulse 0.65s ease-out both; }
+
+/* Primary CTA breathing glow */
+@keyframes glow-pulse {
+  0%, 100% { box-shadow: 0 4px 18px rgba(129, 182, 76, 0.35); }
+  50%      { box-shadow: 0 4px 28px rgba(129, 182, 76, 0.65); }
+}
+.animate-glow-pulse { animation: glow-pulse 2.4s ease-in-out infinite; }
+
+/* Gentle floating for coach avatar */
+@keyframes float-y {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-3px); }
+}
+.animate-float-y { animation: float-y 3s ease-in-out infinite; }
+
+/* Active move pill flash when classification changes */
+@keyframes pill-flash {
+  0%   { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.5); }
+  100% { box-shadow: 0 0 0 10px rgba(255, 255, 255, 0); }
+}
+.animate-pill-flash { animation: pill-flash 0.5s ease-out; }
+
+/* Eval graph seek marker pulse */
+@keyframes marker-pulse {
+  0%, 100% { opacity: 1; r: 4; }
+  50%      { opacity: 0.75; r: 6; }
+}
+.animate-marker-pulse { animation: marker-pulse 1.6s ease-in-out infinite; }
+
+/* Hover lift for interactive pills/cards */
+.lift-hover {
+  transition: transform 0.16s ease, box-shadow 0.16s ease, background-color 0.16s ease;
+}
+.lift-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.4);
+}
+.lift-hover:active {
+  transform: translateY(0) scale(0.97);
+}
+
+/* Respect reduced-motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  .animate-pop-in,
+  .animate-slide-in-left,
+  .animate-slide-in-right,
+  .animate-slide-in-up,
+  .animate-fade-up,
+  .animate-bar-grow,
+  .animate-square-pulse,
+  .animate-glow-pulse,
+  .animate-float-y,
+  .animate-pill-flash,
+  .animate-marker-pulse,
+  .animate-bounce-subtle {
+    animation: none !important;
+    transition: none !important;
+  }
 }

@@ -1,15 +1,19 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { Chessboard, ChessboardProvider } from 'react-chessboard';
 import { useTheme } from '@/hooks/useTheme';
-import type { ParsedGame, GameReview, MoveClassification, MoveDetail } from '@/types/chess';
+import type { ParsedGame, GameReview, MoveDetail, KeyMoment, MoveClassification } from '@/types/chess';
 import { saveReviewToStats } from '@/utils/statsStorage';
 import {
   ChevronLeft, ChevronRight,
   Eye, EyeOff, RotateCcw, Search, BarChart3, Share2, Check, BookOpen,
+  FlipVertical2,
 } from 'lucide-react';
 import { Chess } from 'chess.js';
 import EvalGraph from '@/components/EvalGraph';
 import ExplorePanel from '@/components/ExplorePanel';
+import { ReviewSummary } from '@/components/ReviewSummary';
+import { TacticRetryModal } from '@/components/TacticRetryModal';
+import { CLASSIFICATION_COLORS } from '@/utils/classification';
 
 interface Props {
   game: ParsedGame;
@@ -17,25 +21,35 @@ interface Props {
   onBack: () => void;
 }
 
-const CLASSIFICATION_COLORS: Record<MoveClassification, { text: string; bg: string; border: string; label: string; icon: string }> = {
-  brilliant: { text: 'text-cyan-400', bg: 'bg-cyan-500/20', border: 'border-cyan-500/40', label: 'Brilliant!!', icon: '💎' },
-  great:     { text: 'text-blue-400', bg: 'bg-blue-500/20', border: 'border-blue-500/40', label: 'Great Move!', icon: '🎯' },
-  best:      { text: 'text-emerald-400', bg: 'bg-emerald-500/20', border: 'border-emerald-500/40', label: 'Best Move', icon: '⭐' },
-  excellent: { text: 'text-teal-400', bg: 'bg-teal-500/20', border: 'border-teal-500/30', label: 'Excellent', icon: '✨' },
-  good:      { text: 'text-zinc-300', bg: 'bg-zinc-800', border: 'border-zinc-700', label: 'Good', icon: '👍' },
-  inaccuracy:{ text: 'text-amber-400', bg: 'bg-amber-500/20', border: 'border-amber-500/40', label: 'Inaccuracy', icon: '⚠️' },
-  mistake:   { text: 'text-orange-400', bg: 'bg-orange-500/20', border: 'border-orange-500/40', label: 'Mistake', icon: '❓' },
-  blunder:   { text: 'text-rose-400', bg: 'bg-rose-500/20', border: 'border-rose-500/40', label: 'Blunder', icon: '❌' },
-  book:      { text: 'text-stone-300', bg: 'bg-stone-800', border: 'border-stone-700', label: 'Book Move', icon: '📖' },
+const KEY_MOMENT_RING: Record<KeyMoment['classification'], string> = {
+  brilliant: 'ring-[#81b64c]/70',
+  great: 'ring-[#81b64c]/70',
+  best: 'ring-[#81b64c]/70',
+  excellent: 'ring-teal-400/70',
+  good: 'ring-zinc-400/70',
+  inaccuracy: 'ring-amber-400/70',
+  mistake: 'ring-orange-400/70',
+  miss: 'ring-fuchsia-400/80',
+  blunder: 'ring-red-500/80',
+  book: 'ring-stone-400/70',
+};
+
+const KEY_MOMENT_TAG: Record<KeyMoment['classification'], string> = {
+  brilliant: 'BRILLIANT MOVE',
+  great: 'KEY MOMENT',
+  best: 'KEY MOMENT',
+  excellent: 'KEY MOMENT',
+  good: 'KEY MOMENT',
+  inaccuracy: 'KEY MOMENT',
+  mistake: 'KEY MOMENT',
+  miss: 'MISSED TACTIC',
+  blunder: 'KEY MOMENT',
+  book: 'KEY MOMENT',
 };
 
 function formatEval(val: number): string {
-  if (val > 0) return `+${val.toFixed(1)}`;
-  return val.toFixed(1);
-}
-
-function fe(v: number): string {
-  return Math.abs(v) < 0.1 ? '0.0' : v > 0 ? `+${v.toFixed(1)}` : v.toFixed(1);
+  if (Math.abs(val) < 0.1) return '0.0';
+  return val > 0 ? `+${val.toFixed(1)}` : val.toFixed(1);
 }
 
 
@@ -63,47 +77,63 @@ function getMaterialAdvantage(fen: string) {
 /* ── Animated Speech Bubble & Coach Avatar ── */
 function CoachBubble({
   currentDetail,
+  keyMoment,
   onClick,
 }: {
   currentDetail: MoveDetail | null;
+  keyMoment: KeyMoment | null;
   onClick: () => void;
 }) {
   const cfg = currentDetail ? CLASSIFICATION_COLORS[currentDetail.classification] : null;
+  const Icon = cfg?.icon;
 
   return (
-    <div
+    <button
+      type="button"
       onClick={onClick}
-      className="my-1 cursor-pointer transition-all active:scale-[0.99] group select-none"
+      aria-label={currentDetail ? `Coach analysis for ${currentDetail.san}` : 'Open coach analysis'}
+      className="my-1 w-full text-left cursor-pointer transition-all active:scale-[0.99] group select-none"
     >
-      <div className="flex items-center gap-2.5 px-3.5 py-2 bg-zinc-900/90 rounded-full border border-white/10 shadow-lg backdrop-blur-md hover:border-emerald-500/40">
+      <div className="flex items-center gap-2.5 px-3.5 py-2 bg-zinc-900/90 rounded-full border border-white/10 shadow-lg backdrop-blur-md hover:border-[#81b64c]/40">
         {/* Animated Coach Avatar */}
-        <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-emerald-500 via-teal-400 to-cyan-400 p-0.5 shadow-md shrink-0 animate-bounce-subtle">
-          <div className="w-full h-full rounded-full bg-zinc-950 flex items-center justify-center text-xs">
-            🧔‍♂️
+        <div className="relative shrink-0">
+          {keyMoment && (
+            <span className={`absolute -inset-1 rounded-full ring-4 ${KEY_MOMENT_RING[keyMoment.classification]} animate-pulse pointer-events-none`} />
+          )}
+          <div className="w-7 h-7 rounded-full bg-[#81b64c] p-0.5 shadow-md animate-bounce-subtle">
+            <div className="w-full h-full rounded-full bg-zinc-950 flex items-center justify-center text-[9px] font-black text-emerald-300">
+              CD
+            </div>
           </div>
         </div>
 
         {/* Speech Text */}
         <div className="flex-1 min-w-0 flex items-center justify-between gap-2">
           <div className="truncate text-xs">
-            {cfg ? (
+            {cfg && Icon ? (
               <span className="flex items-center gap-1.5">
                 <span className="font-extrabold text-white">{currentDetail?.san}</span>
-                <span className={`px-2 py-0.5 rounded-full font-bold text-[10px] ${cfg.bg} ${cfg.text} border ${cfg.border}`}>
-                  {cfg.icon} {cfg.label}
+                <span className={`px-2 py-0.5 rounded-full font-bold text-[10px] ${cfg.bg} ${cfg.text} border ${cfg.border} flex items-center gap-0.5`}>
+                  <Icon className="w-3 h-3" />
+                  {cfg.label}
                 </span>
+                {keyMoment && (
+                  <span className="px-1.5 py-0.5 rounded-full bg-amber-400 text-black text-[9px] font-black animate-pulse shrink-0">
+                    {KEY_MOMENT_TAG[keyMoment.classification]}
+                  </span>
+                )}
               </span>
             ) : (
-              <span className="text-zinc-300 font-medium">Game Review &mdash; Tap for Coach Danny's AI Analysis</span>
+              <span className="text-zinc-300 font-medium">Game Review &mdash; Tap for Coach Danny's Analysis</span>
             )}
           </div>
 
-          <span className="text-[10px] text-emerald-400 font-mono font-bold shrink-0 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+          <span className="text-[10px] text-[#81b64c] font-mono font-bold shrink-0 bg-[#81b64c]/10 px-2 py-0.5 rounded-full border border-[#81b64c]/20">
             {currentDetail ? formatEval(currentDetail.eval) : '0.0'}
           </span>
         </div>
       </div>
-    </div>
+    </button>
   );
 }
 
@@ -139,7 +169,7 @@ function PlayerBar({
             <span className="text-[10px] text-zinc-400 font-mono">({rating})</span>
           )}
           {materialAdvantage && materialAdvantage > 0 ? (
-            <span className="text-[10px] font-mono font-bold text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded-full border border-emerald-500/20">
+            <span className="text-[10px] font-mono font-bold text-[#81b64c] bg-[#81b64c]/10 px-1.5 py-0.5 rounded-full border border-[#81b64c]/20">
               +{materialAdvantage}
             </span>
           ) : null}
@@ -148,14 +178,14 @@ function PlayerBar({
 
       <div className="flex items-center gap-1.5">
         {estimatedRating && (
-          <span className="text-[10px] font-mono font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20 hidden sm:inline" title="Performance ELO Rating">
+          <span className="text-[10px] font-mono font-bold text-[#81b64c] bg-[#81b64c]/10 px-2 py-0.5 rounded-full border border-[#81b64c]/20 hidden sm:inline" title="Performance ELO Rating">
             ~{estimatedRating} ELO
           </span>
         )}
         {showAccuracy && accuracy !== undefined && (
-          <div className={`flex items-center gap-1 font-mono text-xs font-extrabold px-2.5 py-0.5 rounded-full border shadow-sm ${
+          <div key={accuracy} className={`flex items-center gap-1 font-mono text-xs font-extrabold px-2.5 py-0.5 rounded-full border shadow-sm animate-pop-in ${
             color === 'white'
-              ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
+              ? 'bg-[#81b64c]/10 border-[#81b64c]/30 text-[#81b64c]'
               : 'bg-zinc-800 border-zinc-700 text-zinc-200'
           }`}>
             <span className="text-[10px] font-sans text-zinc-400 font-normal">Acc:</span>
@@ -173,26 +203,28 @@ function CoachModal({
   onClose,
   currentDetail,
   onRetryMistakes,
+  onTryTactic,
 }: {
   open: boolean;
   onClose: () => void;
   currentDetail: MoveDetail | null;
   onRetryMistakes: () => void;
+  onTryTactic: () => void;
 }) {
   if (!open) return null;
 
   return (
     <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in" onClick={onClose}>
-      <div className="w-full max-w-md bg-zinc-950 rounded-3xl border border-white/10 p-5 shadow-2xl space-y-4" onClick={e => e.stopPropagation()}>
+      <div role="dialog" aria-modal="true" aria-label="Coach Danny's move analysis" className="w-full max-w-md bg-zinc-950 rounded-3xl border border-white/10 p-5 shadow-2xl space-y-4" onClick={e => e.stopPropagation()}>
         <div className="flex items-center gap-3 border-b border-white/10 pb-3">
-          <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-emerald-500 via-teal-400 to-cyan-400 p-0.5 shadow-lg">
-            <div className="w-full h-full rounded-full bg-zinc-900 flex items-center justify-center text-xl">
-              🧔‍♂️
+          <div className="w-12 h-12 rounded-full bg-[#81b64c] p-0.5 shadow-lg">
+            <div className="w-full h-full rounded-full bg-zinc-900 flex items-center justify-center text-sm font-black text-emerald-300">
+              CD
             </div>
           </div>
           <div>
-            <h3 className="font-extrabold text-white text-base">Coach Danny's AI Analysis</h3>
-            <span className="text-xs text-emerald-400 font-mono">Personalized Grandmaster Explanation</span>
+            <h3 className="font-extrabold text-white text-base">Coach Danny's Move Analysis</h3>
+            <span className="text-xs text-[#81b64c] font-mono">Engine-guided explanation of the position</span>
           </div>
         </div>
 
@@ -200,19 +232,20 @@ function CoachModal({
           <div className="space-y-3">
             <div className="flex items-center justify-between bg-zinc-900 p-3 rounded-2xl border border-white/10 text-xs">
               <span className="font-extrabold text-white text-sm">Move: {currentDetail.san}</span>
-              <span className="font-mono text-emerald-400 font-extrabold">Eval: {formatEval(currentDetail.eval)}</span>
+              <span className="font-mono text-[#81b64c] font-extrabold">Eval: {formatEval(currentDetail.eval)}</span>
             </div>
 
             <p className="text-xs text-zinc-300 leading-relaxed bg-zinc-900/60 p-3 rounded-2xl border border-white/5">
-              {currentDetail.classification === 'blunder' && '❌ Critical Blunder: This move surrendered a tactical opportunity or material advantage.'}
-              {currentDetail.classification === 'mistake' && '❓ Mistake: A passive move that gave your opponent counterplay.'}
-              {currentDetail.classification === 'inaccuracy' && '⚠️ Inaccuracy: Slightly off-best line. Missed a faster attacking idea.'}
-              {currentDetail.classification === 'brilliant' && '💎 BRILLIANT!! You found a deep piece sacrifice that completely breaks open the position!'}
-              {currentDetail.classification === 'great' && '🎯 Great Move! The only move that secures the advantage!'}
-              {currentDetail.classification === 'best' && '⭐ Best Move! Stockfish engine choice.'}
-              {currentDetail.classification === 'excellent' && '✨ Excellent Move! Preserves advantage smoothly.'}
-              {currentDetail.classification === 'book' && '📖 Standard Theory: Recognized opening book line.'}
-              {currentDetail.classification === 'good' && '👍 Solid Move: Keeps position playable.'}
+              {currentDetail.classification === 'blunder' && 'Critical Blunder: this move surrendered a tactical opportunity or material advantage.'}
+              {currentDetail.classification === 'mistake' && 'Mistake: a passive move that gave your opponent counterplay.'}
+              {currentDetail.classification === 'inaccuracy' && 'Inaccuracy: slightly off the best line. Missed a faster attacking idea.'}
+              {currentDetail.classification === 'miss' && `Miss: you had a winning tactic here (${currentDetail.bestMoveSan || 'see engine line'}) but played something else. Your position stayed sound — you just left a concrete opportunity on the table. Treat it like a puzzle: try to find it yourself.`}
+              {currentDetail.classification === 'brilliant' && 'BRILLIANT!! You found a deep piece sacrifice that completely breaks open the position!'}
+              {currentDetail.classification === 'great' && 'Great Move! The only move that secures the advantage!'}
+              {currentDetail.classification === 'best' && 'Best Move! The Stockfish engine choice.'}
+              {currentDetail.classification === 'excellent' && 'Excellent Move! Preserves the advantage smoothly.'}
+              {currentDetail.classification === 'book' && 'Standard Theory: recognized opening book line.'}
+              {currentDetail.classification === 'good' && 'Solid Move: keeps the position playable.'}
             </p>
 
             {currentDetail.bestMoveSan && (
@@ -224,16 +257,24 @@ function CoachModal({
           </div>
         ) : (
           <p className="text-xs text-zinc-400">
-            Tap Next to step through moves. Coach Danny will provide personalized tactical explanations on blunders, sacrifices, and key moments.
+            Tap Next to step through moves. Coach Danny will explain blunders, sacrifices, and key moments.
           </p>
         )}
 
         <div className="flex items-center gap-2 pt-2">
+          {currentDetail?.classification === 'miss' && (
+            <button
+              onClick={() => { onClose(); onTryTactic(); }}
+              className="flex-1 py-2.5 rounded-full bg-fuchsia-500 hover:bg-fuchsia-400 text-white font-extrabold text-xs transition-all shadow-md active:scale-95"
+            >
+              Find the Tactic
+            </button>
+          )}
           <button
             onClick={() => { onClose(); onRetryMistakes(); }}
-            className="flex-1 py-2.5 rounded-full bg-amber-500 hover:bg-amber-400 text-black font-extrabold text-xs transition-all shadow-md active:scale-95"
+            className={`${currentDetail?.classification === 'miss' ? 'flex-1' : 'flex-1'} py-2.5 rounded-full bg-amber-500 hover:bg-amber-400 text-black font-extrabold text-xs transition-all shadow-md active:scale-95`}
           >
-            Retry Mistakes 🎯
+            Retry Mistakes
           </button>
           <button
             onClick={onClose}
@@ -255,10 +296,17 @@ export function ReviewPage({ game, review }: Props) {
   const [showExplorer, setShowExplorer] = useState(false);
   const [showBestMove, setShowBestMove] = useState(false);
   const [showCoachModal, setShowCoachModal] = useState(false);
+  const [showTacticModal, setShowTacticModal] = useState(false);
   const [copiedPgn, setCopiedPgn] = useState(false);
+  const [flipped, setFlipped] = useState(false);
   const [cf, setCf] = useState('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1');
   const [bestMoveSquareStyles, setBestMoveSquareStyles] = useState<Record<string, React.CSSProperties>>({});
   const moveRibbonRef = useRef<HTMLDivElement>(null);
+  const activePillRef = useRef<HTMLButtonElement | null>(null);
+
+  useEffect(() => {
+    activePillRef.current?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+  }, [cmi]);
 
   const totalPlies = review.moves.length * 2;
 
@@ -272,6 +320,13 @@ export function ReviewPage({ game, review }: Props) {
   }, [review.moves, totalPlies]);
 
   const currentDetail = cmi === 0 ? null : getMoveAtPly(cmi);
+
+  const keyMoment = useMemo(() => {
+    if (cmi === 0) return null;
+    const moveNumber = Math.floor((cmi - 1) / 2) + 1;
+    const side = (cmi - 1) % 2 === 0 ? 'white' : 'black';
+    return review.keyMoments.find(k => k.moveNumber === moveNumber && k.side === side) ?? null;
+  }, [cmi, review.keyMoments]);
 
   useEffect(() => {
     saveReviewToStats(review, game);
@@ -318,6 +373,25 @@ export function ReviewPage({ game, review }: Props) {
     setCf(ch.fen());
   }, [cmi, review.moves, showBestMove, getMoveAtPly]);
 
+  const lastMoveSquareStyles = useMemo(() => {
+    if (showBestMove || !currentDetail || !currentDetail.uci || currentDetail.uci.length < 4) return {};
+    const from = currentDetail.uci.slice(0, 2);
+    const to = currentDetail.uci.slice(2, 4);
+    return {
+      [from]: { backgroundColor: 'rgba(59, 130, 246, 0.45)', animation: 'square-pulse 0.65s ease-out' },
+      [to]: { backgroundColor: 'rgba(59, 130, 246, 0.55)', animation: 'square-pulse 0.65s ease-out' },
+    };
+  }, [showBestMove, currentDetail]);
+
+  const bestMoveArrows = useMemo(() => {
+    if (!showBestMove || !currentDetail?.bestMoveUci || currentDetail.bestMoveUci.length < 4) return undefined;
+    return [{
+      startSquare: currentDetail.bestMoveUci.slice(0, 2),
+      endSquare: currentDetail.bestMoveUci.slice(2, 4),
+      color: 'rgba(129, 182, 76, 0.9)',
+    }];
+  }, [showBestMove, currentDetail]);
+
   const moveTo = useCallback((targetPly: number) => {
     const clamped = Math.max(0, Math.min(targetPly, totalPlies));
     setCmi(clamped);
@@ -325,11 +399,14 @@ export function ReviewPage({ game, review }: Props) {
   }, [totalPlies]);
 
   const handleRetryMistakes = () => {
-    const firstMistake = review.keyMoments.find(k => k.classification === 'blunder' || k.classification === 'mistake');
-    if (firstMistake) {
-      const idx = review.moves.findIndex(m => m.moveNumber === firstMistake.moveNumber);
+    const priority: MoveClassification[] = ['blunder', 'mistake', 'miss'];
+    const firstBad = priority
+      .map(c => review.keyMoments.find(k => k.classification === c))
+      .find(k => k !== undefined);
+    if (firstBad) {
+      const idx = review.moves.findIndex(m => m.moveNumber === firstBad.moveNumber);
       if (idx !== -1) {
-        const ply = idx * 2 + (firstMistake.side === 'white' ? 1 : 2);
+        const ply = idx * 2 + (firstBad.side === 'white' ? 1 : 2);
         moveTo(ply);
         setShowBestMove(true);
       }
@@ -337,6 +414,17 @@ export function ReviewPage({ game, review }: Props) {
       moveTo(1);
     }
   };
+
+  const fenBeforeMiss = useMemo(() => {
+    if (cmi === 0 || currentDetail?.classification !== 'miss') return null;
+    const ch = new Chess();
+    let count = 0;
+    for (const m of game.moves) {
+      if (count >= cmi - 1) break;
+      try { ch.move(m); count++; } catch { break; }
+    }
+    return ch.fen();
+  }, [cmi, currentDetail, game.moves]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -368,33 +456,47 @@ export function ReviewPage({ game, review }: Props) {
   };
 
   return (
-    <div className="w-full flex-1 bg-transparent text-zinc-100 flex flex-col justify-between py-1.5 max-w-xl mx-auto px-3 selection:bg-emerald-500/30">
+    <div className="w-full flex-1 bg-transparent text-zinc-100 flex flex-col justify-between py-1.5 max-w-xl mx-auto px-3 selection:bg-[#81b64c]/30">
 
       {/* ── TOP HEADER WITH SHARE & OPENING EXPLORER TOGGLE ── */}
       <div className="flex items-center justify-between text-xs bg-zinc-900/90 rounded-full border border-white/10 px-4 py-2 mb-1 shrink-0 backdrop-blur-md shadow-md">
         <div className="flex items-center gap-1.5 min-w-0">
-          <BookOpen className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+          <BookOpen className="w-3.5 h-3.5 text-[#81b64c] shrink-0" />
           <span className="text-white font-extrabold truncate text-xs">{review.opening}</span>
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
           <button
             onClick={() => setShowExplorer(!showExplorer)}
             className={`px-3 py-1 rounded-full text-[11px] font-extrabold transition-all active:scale-95 ${
-              showExplorer ? 'bg-emerald-500 text-black shadow-md' : 'bg-zinc-800 text-zinc-300 hover:text-white'
+              showExplorer ? 'bg-[#81b64c] text-white shadow-md' : 'bg-zinc-800 text-zinc-300 hover:text-white'
             }`}
           >
             Explorer
+          </button>
+          <button
+            onClick={() => setFlipped(f => !f)}
+            title="Flip board orientation"
+            aria-label="Flip board orientation"
+            className={`flex items-center gap-1 px-3 py-1 rounded-full transition-all text-[11px] font-extrabold active:scale-95 ${
+              flipped ? 'bg-[#81b64c] text-white shadow-md' : 'bg-zinc-800 text-zinc-300 hover:text-white'
+            }`}
+          >
+            <FlipVertical2 className="w-3 h-3" />
+            <span className="hidden sm:inline">Flip</span>
           </button>
           <button
             onClick={handleSharePgn}
             className="flex items-center gap-1 px-3 py-1 rounded-full bg-zinc-800 hover:bg-zinc-700 text-zinc-200 transition-all text-[11px] font-semibold active:scale-95"
             title="Share Annotated PGN"
           >
-            {copiedPgn ? <Check className="w-3 h-3 text-emerald-400" /> : <Share2 className="w-3 h-3 text-zinc-400" />}
+            {copiedPgn ? <Check className="w-3 h-3 text-[#81b64c]" /> : <Share2 className="w-3 h-3 text-zinc-400" />}
             <span>{copiedPgn ? 'Copied!' : 'Share'}</span>
           </button>
         </div>
       </div>
+
+      {/* ── GAME SUMMARY (accuracy dials + move quality) ── */}
+      <ReviewSummary game={game} review={review} />
 
       {/* ── OPENING EXPLORER PANEL ── */}
       {showExplorer && (
@@ -404,7 +506,9 @@ export function ReviewPage({ game, review }: Props) {
       )}
 
       {/* ── COACH SPEECH BUBBLE ── */}
-      <CoachBubble currentDetail={currentDetail} onClick={() => setShowCoachModal(true)} />
+      <div key={cmi} className="animate-slide-in-left">
+        <CoachBubble currentDetail={currentDetail} keyMoment={keyMoment} onClick={() => setShowCoachModal(true)} />
+      </div>
 
       {/* ── MAIN CHESS.COM BOARD & PLAYER CARDS CONTAINER ── */}
       <div className="flex-1 flex flex-col items-center justify-center bg-transparent px-0 relative my-0" style={{ minHeight: 0 }}>
@@ -427,11 +531,11 @@ export function ReviewPage({ game, review }: Props) {
             {showAnalysis && (
               <div className="w-3 h-[min(100%,410px)] aspect-[1/16] bg-zinc-950 rounded-full overflow-hidden flex flex-col justify-end border border-white/10 relative shadow-inner shrink-0">
                 <div
-                  className="bg-emerald-400 transition-all duration-300 w-full rounded-b-full shadow-md"
-                  style={{ height: `${evalBarPercent}%` }}
+                  className="bg-[#81b64c] transition-all w-full rounded-b-full shadow-md"
+                  style={{ height: `${evalBarPercent}%`, transition: 'height 500ms cubic-bezier(0.34, 1.3, 0.5, 1)' }}
                 />
-                <div className="absolute top-1 left-0 right-0 text-[8px] font-mono text-center font-extrabold text-zinc-400 pointer-events-none">
-                  {fe(evalValue)}
+                <div className="absolute top-1 left-0 right-0 text-[10px] font-mono text-center font-extrabold text-zinc-400 pointer-events-none">
+                  {formatEval(evalValue)}
                 </div>
               </div>
             )}
@@ -441,12 +545,14 @@ export function ReviewPage({ game, review }: Props) {
               <ChessboardProvider options={{
                 pieces,
                 position: cf,
-                boardOrientation: 'white',
-                darkSquareStyle: { backgroundColor: boardTheme.dark },
-                lightSquareStyle: { backgroundColor: boardTheme.light },
+                boardOrientation: flipped ? 'black' : 'white',
+                darkSquareStyle: { backgroundColor: boardTheme.dark, backgroundImage: boardTheme.darkTexture },
+                lightSquareStyle: { backgroundColor: boardTheme.light, backgroundImage: boardTheme.lightTexture },
                 showNotation: true,
                 animationDurationInMs: 150,
-                squareStyles: bestMoveSquareStyles,
+                allowDrawingArrows: true,
+                arrows: bestMoveArrows,
+                squareStyles: { ...lastMoveSquareStyles, ...bestMoveSquareStyles },
               }}>
                 <Chessboard />
               </ChessboardProvider>
@@ -484,29 +590,35 @@ export function ReviewPage({ game, review }: Props) {
           {review.moves.map((mp, i) => {
             const wp = i * 2 + 1; const bp = i * 2 + 2;
             const wAct = cmi === wp; const bAct = cmi === bp;
+            const wCfg = CLASSIFICATION_COLORS[mp.white.classification];
+            const bCfg = mp.black ? CLASSIFICATION_COLORS[mp.black.classification] : null;
             return (
               <div key={mp.moveNumber} className="flex items-center gap-1 shrink-0">
                 <span className="text-zinc-400 text-[11px] font-bold">{mp.moveNumber}.</span>
                 {/* White */}
                 <button
+                  ref={wAct ? activePillRef : undefined}
+                  key={wAct ? `wp-${cmi}` : `wp-${wp}`}
                   onClick={() => moveTo(wp)}
                   className={`px-2 py-0.5 rounded-full font-bold transition-all ${
                     wAct
-                      ? 'ribbon-active bg-white text-zinc-950 shadow-md font-extrabold underline'
-                      : 'hover:bg-zinc-800 text-zinc-200'
+                      ? 'bg-white text-zinc-950 shadow-md font-extrabold underline animate-pop-in'
+                      : `hover:bg-zinc-800 ${wCfg.text}`
                   }`}
                 >
                   {mp.white.san}
                 </button>
 
                 {/* Black */}
-                {mp.black && (
+                {mp.black && bCfg && (
                   <button
+                    ref={bAct ? activePillRef : undefined}
+                    key={bAct ? `bp-${cmi}` : `bp-${bp}`}
                     onClick={() => moveTo(bp)}
                     className={`px-2 py-0.5 rounded-full font-bold transition-all ${
                       bAct
-                        ? 'ribbon-active bg-white text-zinc-950 shadow-md font-extrabold underline'
-                        : 'hover:bg-zinc-800 text-zinc-200'
+                        ? 'bg-white text-zinc-950 shadow-md font-extrabold underline animate-pop-in'
+                        : `hover:bg-zinc-800 ${bCfg.text}`
                     }`}
                   >
                     {mp.black.san}
@@ -527,11 +639,11 @@ export function ReviewPage({ game, review }: Props) {
         {/* 1. Show Button */}
         <button
           onClick={() => setShowAnalysis(!showAnalysis)}
-          className={`flex-1 flex flex-col items-center justify-center p-2 rounded-2xl text-[11px] font-extrabold transition-all active:scale-95 ${
-            showAnalysis ? 'text-emerald-400 bg-emerald-500/10 border border-emerald-500/20' : 'text-zinc-400 hover:text-white bg-zinc-900/60'
+          className={`lift-hover flex-1 flex flex-col items-center justify-center p-2 rounded-2xl text-[11px] font-extrabold transition-all active:scale-95 ${
+            showAnalysis ? 'text-[#81b64c] bg-[#81b64c]/10 border border-[#81b64c]/20' : 'text-zinc-400 hover:text-white bg-zinc-900/60'
           }`}
         >
-          {showAnalysis ? <EyeOff className="w-4 h-4 mb-0.5 text-emerald-400" /> : <Eye className="w-4 h-4 mb-0.5" />}
+          {showAnalysis ? <EyeOff className="w-4 h-4 mb-0.5 text-[#81b64c]" /> : <Eye className="w-4 h-4 mb-0.5" />}
           <span>{showAnalysis ? 'Hide' : 'Show'}</span>
         </button>
 
@@ -539,7 +651,7 @@ export function ReviewPage({ game, review }: Props) {
         <button
           onClick={() => setShowBestMove(!showBestMove)}
           disabled={!currentDetail}
-          className={`flex-1 flex flex-col items-center justify-center p-2 rounded-2xl text-[11px] font-extrabold transition-all active:scale-95 disabled:opacity-30 ${
+          className={`lift-hover flex-1 flex flex-col items-center justify-center p-2 rounded-2xl text-[11px] font-extrabold transition-all active:scale-95 disabled:opacity-30 ${
             showBestMove
               ? 'text-amber-400 bg-amber-500/20 border border-amber-500/40 shadow-md'
               : 'text-zinc-400 hover:text-white bg-zinc-900/60'
@@ -552,7 +664,7 @@ export function ReviewPage({ game, review }: Props) {
         {/* 3. Retry Mistakes Button */}
         <button
           onClick={handleRetryMistakes}
-          className="flex-1 flex flex-col items-center justify-center p-2 rounded-2xl text-[11px] font-extrabold text-amber-400 bg-amber-500/10 border border-amber-500/20 hover:text-amber-300 transition-all active:scale-95"
+          className="lift-hover flex-1 flex flex-col items-center justify-center p-2 rounded-2xl text-[11px] font-extrabold text-amber-400 bg-amber-500/10 border border-amber-500/20 hover:text-amber-300 transition-all active:scale-95"
           title="Jump to blunders and retry correct moves"
         >
           <RotateCcw className="w-4 h-4 mb-0.5 text-amber-400" />
@@ -562,9 +674,9 @@ export function ReviewPage({ game, review }: Props) {
         {/* 4. Table Button */}
         <button
           onClick={() => setShowMoveTable(true)}
-          className="flex-1 flex flex-col items-center justify-center p-2 rounded-2xl text-[11px] font-extrabold text-zinc-300 bg-zinc-900/60 hover:text-white transition-all active:scale-95"
+          className="lift-hover flex-1 flex flex-col items-center justify-center p-2 rounded-2xl text-[11px] font-extrabold text-zinc-300 bg-zinc-900/60 hover:text-white transition-all active:scale-95"
         >
-          <BarChart3 className="w-4 h-4 mb-0.5 text-emerald-400" />
+          <BarChart3 className="w-4 h-4 mb-0.5 text-[#81b64c]" />
           <span>Table</span>
         </button>
 
@@ -572,7 +684,7 @@ export function ReviewPage({ game, review }: Props) {
         <button
           onClick={() => moveTo(cmi + 1)}
           disabled={cmi >= totalPlies}
-          className="flex-[1.5] py-2.5 rounded-full bg-[#81b64c] hover:bg-[#74a544] text-white font-black text-xs transition-all shadow-lg active:scale-95 flex items-center justify-center gap-1 disabled:opacity-30"
+          className="flex-[1.5] py-2.5 rounded-full bg-[#81b64c] hover:bg-[#74a544] text-white font-black text-xs transition-all shadow-lg active:scale-95 flex items-center justify-center gap-1 disabled:opacity-30 animate-glow-pulse"
         >
           <span>Next</span>
           <ChevronRight className="w-4 h-4 stroke-[3]" />
@@ -585,7 +697,28 @@ export function ReviewPage({ game, review }: Props) {
         onClose={() => setShowCoachModal(false)}
         currentDetail={currentDetail}
         onRetryMistakes={handleRetryMistakes}
+        onTryTactic={() => setShowTacticModal(true)}
       />
+
+      {/* Missed Tactic Retry Modal */}
+      {fenBeforeMiss && currentDetail && (() => {
+        const missSide = (cmi - 1) % 2 === 0 ? 'white' : 'black';
+        const evalAfterTactic = keyMoment
+          ? (missSide === 'black' ? -keyMoment.evalBefore : keyMoment.evalBefore)
+          : currentDetail.eval;
+        return (
+          <TacticRetryModal
+            open={showTacticModal}
+            onClose={() => setShowTacticModal(false)}
+            fen={fenBeforeMiss}
+            bestMoveUci={currentDetail.bestMoveUci || 'e2e4'}
+            bestMoveSan={currentDetail.bestMoveSan || ''}
+            evalAfterTactic={evalAfterTactic}
+            side={missSide}
+            playerName={missSide === 'black' ? game.black : game.white}
+          />
+        );
+      })()}
 
       {/* Full Move Table Modal */}
       {showMoveTable && (
@@ -601,13 +734,31 @@ export function ReviewPage({ game, review }: Props) {
               {review.moves.map(m => (
                 <div key={m.moveNumber} className="flex items-center justify-between p-2.5 rounded-2xl bg-zinc-900 border border-white/5 text-xs font-mono">
                   <span className="text-zinc-400 font-bold w-8">{m.moveNumber}.</span>
-                  <button onClick={() => { moveTo(m.moveNumber * 2 - 1); setShowMoveTable(false); }} className="flex-1 text-left font-bold text-emerald-400 hover:underline">
-                    {m.white.san} ({formatEval(m.white.eval)})
-                  </button>
+                  {(() => {
+                    const cfg = CLASSIFICATION_COLORS[m.white.classification];
+                    return (
+                      <button
+                        onClick={() => { moveTo(m.moveNumber * 2 - 1); setShowMoveTable(false); }}
+                        className="flex-1 text-left font-bold text-[#81b64c] hover:underline flex items-center gap-1.5 min-w-0"
+                      >
+                        <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${cfg.text}`} style={{ background: 'currentColor' }} title={cfg.label} />
+                        <span className="truncate">{m.white.san} ({formatEval(m.white.eval)})</span>
+                      </button>
+                    );
+                  })()}
                   {m.black && (
-                    <button onClick={() => { moveTo(m.moveNumber * 2); setShowMoveTable(false); }} className="flex-1 text-left font-bold text-cyan-400 hover:underline">
-                      {m.black.san} ({formatEval(m.black.eval)})
-                    </button>
+                    (() => {
+                      const cfg = CLASSIFICATION_COLORS[m.black.classification];
+                      return (
+                        <button
+                          onClick={() => { moveTo(m.moveNumber * 2); setShowMoveTable(false); }}
+                          className="flex-1 text-left font-bold text-[#81b64c] hover:underline flex items-center gap-1.5 min-w-0"
+                        >
+                          <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${cfg.text}`} style={{ background: 'currentColor' }} title={cfg.label} />
+                          <span className="truncate">{m.black.san} ({formatEval(m.black.eval)})</span>
+                        </button>
+                      );
+                    })()
                   )}
                 </div>
               ))}

@@ -5,12 +5,7 @@ module.exports = {
   safelist: [
     'wallpaper-newspaper', 'wallpaper-walnut', 'wallpaper-cosmos',
     'wallpaper-forest', 'wallpaper-obsidian', 'wallpaper-ocean',
-    'glass-card', 'glass-pill', 'glass-navbar',
-    'acc-badge-white', 'acc-badge-black',
-    'move-brilliant', 'move-great', 'move-best', 'move-excellent',
-    'move-good', 'move-book', 'move-inaccuracy', 'move-mistake',
-    'move-blunder', 'move-miss', 'chess-piece-3d', 'animate-float-glow',
-    'animate-fade-in-up', 'shimmer', 'gradient-border',
+    'chess-piece-3d',
   ],
   theme: {
     extend: {

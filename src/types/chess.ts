@@ -15,6 +15,7 @@ export type MoveClassification =
   | 'good'
   | 'inaccuracy'
   | 'mistake'
+  | 'miss'
   | 'blunder'
   | 'book';
 

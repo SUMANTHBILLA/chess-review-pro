@@ -62,6 +62,21 @@ function detectGreat(
   return evalGain >= 1.0;
 }
 
+/** Detect miss: a winning tactic was available but the played move kept the position sound. */
+function detectMiss(
+  evalBefore: number,
+  evalAfter: number,
+  side: 'w' | 'b',
+  isBestMove: boolean
+): boolean {
+  if (isBestMove) return false;
+  const sideFactor = side === 'w' ? 1 : -1;
+  const netBefore = evalBefore * sideFactor;
+  const netAfter = evalAfter * sideFactor;
+  const evalDiff = netBefore - netAfter;
+  return netBefore >= 1.2 && netAfter > -0.5 && evalDiff >= 1.2;
+}
+
 function classifyMove(
   fenBefore: string,
   evalBefore: number,
@@ -75,6 +90,7 @@ function classifyMove(
   if (detectBrilliant(fenBefore, moveSan, evalBefore, evalAfter, isBestMove, side)) return 'brilliant';
   if (detectGreat(evalBefore, evalAfter, isBestMove, side)) return 'great';
   if (isBestMove) return 'best';
+  if (detectMiss(evalBefore, evalAfter, side, isBestMove)) return 'miss';
 
   const evalDiff = side === 'w' ? evalBefore - evalAfter : evalAfter - evalBefore;
   if (evalDiff < 0.25) return 'excellent';
@@ -87,7 +103,7 @@ function classifyMove(
 // ── Scoring helpers ────────────────────────────────────────────────────────
 
 function getClassifications(moves: AnalyzedMove[], side: 'white' | 'black') {
-  const counts: Record<MoveClassification, number> = { brilliant: 0, great: 0, best: 0, excellent: 0, good: 0, inaccuracy: 0, mistake: 0, blunder: 0, book: 0 };
+  const counts: Record<MoveClassification, number> = { brilliant: 0, great: 0, best: 0, excellent: 0, good: 0, inaccuracy: 0, mistake: 0, miss: 0, blunder: 0, book: 0 };
   moves.forEach(m => {
     const mv = side === 'white' ? m.white : m.black;
     if (mv) counts[mv.classification]++;
@@ -96,7 +112,7 @@ function getClassifications(moves: AnalyzedMove[], side: 'white' | 'black') {
 }
 
 function calculateAccuracy(classifications: Record<string, number>) {
-  const weights: Record<string, number> = { brilliant: 100, great: 95, best: 90, excellent: 85, good: 70, inaccuracy: 40, mistake: 20, blunder: 0, book: 90 };
+  const weights: Record<string, number> = { brilliant: 100, great: 95, best: 90, excellent: 85, good: 70, inaccuracy: 40, mistake: 20, miss: 45, blunder: 0, book: 90 };
   let total = 0, count = 0;
   Object.entries(classifications).forEach(([k, v]) => { total += v * (weights[k] || 50); count += v; });
   return count > 0 ? Math.round((total / count) * 10) / 10 : 50;
@@ -196,7 +212,7 @@ export function useGameAnalysis() {
           const whiteClassification = classifyMove(fenBeforeWhite, prevEval, whiteEval, 'w', isWhiteBest, whiteMoveSan, isWhiteBook);
           const whiteDetail: MoveDetail = { san: whiteMoveSan, uci: whiteUci, fen: whiteFen, eval: whiteEval, classification: whiteClassification, bestMoveUci: whiteBestUci, bestMoveSan: whiteBestSan };
 
-          if (whiteClassification === 'blunder' || whiteClassification === 'mistake' || whiteClassification === 'brilliant' || whiteClassification === 'great') {
+          if (whiteClassification === 'blunder' || whiteClassification === 'mistake' || whiteClassification === 'miss' || whiteClassification === 'brilliant' || whiteClassification === 'great') {
             keyMoments.push({ moveNumber, side: 'white', classification: whiteClassification, san: whiteMoveSan, evalBefore: prevEval, evalAfter: whiteEval, fen: whiteFen });
           }
 
@@ -224,7 +240,7 @@ export function useGameAnalysis() {
             const blackClassification = classifyMove(fenBeforeBlack, whiteEval, blackEval, 'b', isBlackBest, blackMoveSan, isBlackBook);
             blackDetail = { san: blackMoveSan, uci: blackUci, fen: blackFen, eval: blackEval, classification: blackClassification, bestMoveUci: blackBestUci, bestMoveSan: blackBestSan };
 
-            if (blackClassification === 'blunder' || blackClassification === 'mistake' || blackClassification === 'brilliant' || blackClassification === 'great') {
+            if (blackClassification === 'blunder' || blackClassification === 'mistake' || blackClassification === 'miss' || blackClassification === 'brilliant' || blackClassification === 'great') {
               keyMoments.push({ moveNumber, side: 'black', classification: blackClassification, san: blackMoveSan, evalBefore: whiteEval, evalAfter: blackEval, fen: blackFen });
             }
             prevEval = blackEval;
