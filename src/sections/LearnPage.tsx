@@ -420,12 +420,12 @@ export function LearnPage() {
   };
 
   return (
-    <div className="w-full flex-1 bg-transparent text-zinc-100 flex flex-col justify-between py-3 max-w-xl mx-auto px-3 selection:bg-[#81b64c]/30">
-      {/* Header */}
-      <div className="bg-zinc-900/90 rounded-2xl border border-white/10 p-3.5 mb-2 shrink-0 backdrop-blur-md shadow-md flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-[#81b64c] flex items-center justify-center text-white font-bold shadow-md">
-            <GraduationCap className="w-5 h-5" />
+    <div className="w-full flex-1 bg-transparent text-zinc-100 flex flex-col justify-between py-3 max-w-6xl mx-auto px-3 selection:bg-[#81b64c]/30 relative">
+      {/* Top Header Controls Bar */}
+      <div className="bg-[#2b2926] rounded-2xl border border-white/10 p-3 shrink-0 backdrop-blur-md shadow-md flex items-center justify-between flex-wrap gap-2 mb-2">
+        <div className="flex items-center gap-2.5">
+          <div className="w-9 h-9 rounded-xl bg-[#81b64c] flex items-center justify-center text-white font-bold shadow-md">
+            <GraduationCap className="w-5 h-5 text-white" />
           </div>
           <div>
             <h1 className="font-extrabold text-sm text-white leading-none">Grandmaster Chess Academy</h1>
@@ -433,22 +433,22 @@ export function LearnPage() {
           </div>
         </div>
 
-        <div className="flex items-center gap-1.5 bg-zinc-800 border border-zinc-700 px-3 py-1 rounded-xl text-xs font-mono font-bold text-[#81b64c]">
+        <div className="flex items-center gap-1.5 bg-[#1e1c1a] border border-zinc-700 px-3 py-1 rounded-full text-xs font-mono font-bold text-[#81b64c]">
           <Award className="w-4 h-4 text-amber-400" />
           <span>{completedLessonIds.length} / {COMPLETE_GM_CURRICULUM.length}</span>
         </div>
       </div>
 
-      {/* Category Filter Pills */}
-      <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1 mb-1">
+      {/* Unified Rounded Category Filter Pill Bar */}
+      <div className="bg-[#2b2926] p-1.5 rounded-full border border-white/10 shadow-md flex items-center gap-1 overflow-x-auto no-scrollbar mb-3">
         {['All', 'Foundations', 'Tactics', 'Openings', 'Strategy', 'Sacrifices', 'GM Endgames'].map(cat => (
           <button
             key={cat}
             onClick={() => setSelectedCategory(cat)}
-            className={`px-3 py-1 rounded-xl text-xs font-bold transition-all shrink-0 active:scale-95 ${
+            className={`px-4 py-1.5 rounded-full text-xs font-extrabold transition-all shrink-0 active:scale-95 ${
               selectedCategory === cat
                 ? 'bg-[#81b64c] text-white shadow-md'
-                : 'bg-zinc-900 border border-white/10 text-zinc-300 hover:text-white'
+                : 'text-zinc-400 hover:text-white hover:bg-white/5'
             }`}
           >
             {cat}
@@ -456,31 +456,31 @@ export function LearnPage() {
         ))}
       </div>
 
-      {/* Main Interactive Lesson Studio */}
-      <div className="flex-1 flex flex-col gap-2 overflow-y-auto my-1" style={{ minHeight: 0 }}>
+      {/* Main Studio Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 flex-1 items-start">
 
-        {/* Lesson Interactive Card */}
-        <div className="bg-zinc-900/90 rounded-2xl border border-white/10 p-3 shadow-xl space-y-2.5">
-          <div className="flex items-center justify-between border-b border-white/5 pb-2">
+        {/* Left Column: Interactive Lesson Studio */}
+        <div className="lg:col-span-7 bg-[#2b2926] rounded-2xl border border-white/10 p-3.5 shadow-xl space-y-3">
+          <div className="flex items-center justify-between border-b border-white/5 pb-2.5">
             <div>
               <span className="text-[10px] text-[#81b64c] font-mono font-bold uppercase tracking-wider">
                 {activeLesson.chapter}
               </span>
-              <h2 className="text-xs font-extrabold text-white">{activeLesson.title}</h2>
+              <h2 className="text-sm font-extrabold text-white">{activeLesson.title}</h2>
             </div>
-            <span className="text-[10px] bg-zinc-800 text-zinc-300 px-2 py-0.5 rounded-full font-mono border border-zinc-700">
+            <span className="text-[10px] bg-[#1e1c1a] text-zinc-300 px-2.5 py-0.5 rounded-full font-mono border border-zinc-700 font-bold">
               {activeLesson.eloRange}
             </span>
           </div>
 
-          <div className="bg-zinc-950 p-2.5 rounded-xl border border-[#81b64c]/30 text-xs flex items-center gap-2">
+          <div className="bg-[#1e1c1a] p-3 rounded-xl border border-[#81b64c]/30 text-xs flex items-center gap-2.5">
             <div className="w-6 h-6 rounded-lg bg-[#81b64c]/20 text-[#81b64c] flex items-center justify-center font-extrabold shrink-0">
               {currentStep.stepNumber}
             </div>
             <p className="text-zinc-200 font-medium leading-snug">{currentStep.prompt}</p>
           </div>
 
-          <div className="w-full aspect-square relative rounded-2xl overflow-hidden border border-white/10 shadow-2xl max-w-[min(100%,370px)] mx-auto touch-none">
+          <div className="w-full aspect-square relative rounded-2xl overflow-hidden border border-white/10 shadow-2xl max-w-[min(100%,380px)] mx-auto touch-none">
             <ChessboardProvider options={{
               pieces,
               position: fen,
@@ -531,9 +531,11 @@ export function LearnPage() {
           )}
         </div>
 
-        {/* Curriculum List */}
-        <div className="space-y-1.5 pt-1">
-          <div className="text-xs font-bold text-zinc-400 px-1 font-mono">Curriculum Lessons ({filteredCurriculum.length})</div>
+        {/* Right Column: Curriculum List */}
+        <div className="lg:col-span-5 bg-[#2b2926] rounded-2xl border border-white/10 p-3.5 shadow-xl space-y-2 max-h-[640px] overflow-y-auto">
+          <div className="text-xs font-bold text-zinc-400 px-1 font-mono uppercase tracking-wider">
+            Curriculum Lessons ({filteredCurriculum.length})
+          </div>
           {filteredCurriculum.map(lesson => {
             const isActive = activeLesson.id === lesson.id;
             const isDone = completedLessonIds.includes(lesson.id);
@@ -550,10 +552,10 @@ export function LearnPage() {
                     loadLesson(lesson);
                   }
                 }}
-                className={`p-3 rounded-2xl border cursor-pointer transition-all flex items-center justify-between text-xs ${
+                className={`p-3 rounded-xl border cursor-pointer transition-all flex items-center justify-between text-xs ${
                   isActive
                     ? 'bg-[#81b64c]/20 border-[#81b64c]/50 shadow-md font-bold'
-                    : 'bg-zinc-900/80 border-white/10 hover:bg-zinc-800'
+                    : 'bg-[#1e1c1a] border-white/5 hover:bg-zinc-800/80 text-zinc-300'
                 }`}
               >
                 <div className="flex items-center gap-2.5 min-w-0">
