@@ -1,6 +1,6 @@
 import { loadOpenings, posKey, detectOpeningFromMoves } from '@/utils/openingBook';
 import { saveReviewToStats, getCachedGameReview } from '@/utils/statsStorage';
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { Chess } from 'chess.js';
 import type {
   ParsedGame,
