@@ -1,4 +1,5 @@
-import { Palette, ArrowLeft, Target, BarChart2, GraduationCap, Shield, Crown } from 'lucide-react';
+import { Palette, ArrowLeft, Target, BarChart2, GraduationCap } from 'lucide-react';
+import mainIcon from '@/assets/main-icon.png';
 
 interface NavbarProps {
   currentScreen: 'home' | 'review' | 'puzzles' | 'stats' | 'learn';
@@ -43,14 +44,9 @@ export function Navbar({
               onClick={onNavigateHome}
               className="flex items-center gap-2.5 group focus:outline-none"
             >
-              {/* Grandmaster Shield & Crown Logo */}
-              <div className="w-10 h-10 rounded-xl bg-[#81b64c] p-0.5 shadow-lg shadow-[#81b64c]/20 group-hover:scale-105 transition-all">
-                <div className="w-full h-full bg-[#262421] rounded-[10px] flex items-center justify-center relative overflow-hidden">
-                  <div className="relative z-10 flex items-center justify-center">
-                    <Shield className="w-6 h-6 text-[#81b64c] fill-[#81b64c]/20 stroke-[2]" />
-                    <Crown className="w-3 h-3 text-amber-400 absolute -top-0.5 fill-amber-400/40 stroke-[2.5]" />
-                  </div>
-                </div>
+              {/* Knight/Falcon Logo */}
+              <div className="h-10 sm:h-12 w-auto shrink-0 group-hover:scale-105 transition-transform flex items-center justify-center">
+                <img src={mainIcon} alt="Chess Review PRO" className="h-full w-auto object-contain drop-shadow-[0_2px_10px_rgba(129,182,76,0.35)]" />
               </div>
               <div className="flex flex-col text-left">
                 <span className="font-black text-base text-white tracking-tight leading-none group-hover:text-[#81b64c] transition-colors flex items-center gap-1.5">

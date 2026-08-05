@@ -1,4 +1,5 @@
-import { Crown, ShieldCheck, Heart, Sparkles } from 'lucide-react';
+import { ShieldCheck, Heart, Sparkles } from 'lucide-react';
+import mainIcon from '@/assets/main-icon.png';
 
 interface FooterProps {
   onNavigateHome?: () => void;
@@ -6,12 +7,12 @@ interface FooterProps {
 
 export function Footer({ onNavigateHome }: FooterProps) {
   return (
-    <footer className="w-full bg-[#09090b] border-t border-white/[0.08] text-zinc-400 text-xs py-6 px-4 mt-auto safe-bottom">
-      <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+    <footer className="w-full bg-[#09090b] border-t border-white/[0.08] text-zinc-400 text-xs py-2 px-4 mt-auto">
+      <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-center gap-4 text-center">
         {/* Brand info */}
-        <div className="flex items-center gap-2 text-center md:text-left">
-          <div className="w-6 h-6 rounded-lg bg-[#81b64c]/10 border border-[#81b64c]/20 flex items-center justify-center shrink-0">
-            <Crown className="w-3.5 h-3.5 text-[#81b64c]" />
+        <div className="flex items-center justify-center gap-2">
+          <div className="h-7 sm:h-8 w-auto shrink-0 flex items-center justify-center">
+            <img src={mainIcon} alt="Chess Review PRO" className="h-full w-auto object-contain drop-shadow-[0_1px_6px_rgba(129,182,76,0.3)]" />
           </div>
           <span className="font-extrabold text-white tracking-tight">Chess Review</span>
           <span className="text-zinc-600">&middot;</span>
@@ -27,7 +28,7 @@ export function Footer({ onNavigateHome }: FooterProps) {
         </div>
 
         {/* Action link & copyright */}
-        <div className="flex items-center gap-4 text-[11px] text-zinc-400">
+        <div className="flex items-center justify-center gap-4 text-[11px] text-zinc-400">
           {onNavigateHome && (
             <button
               onClick={onNavigateHome}
