@@ -477,7 +477,8 @@ export function PuzzlePage() {
         setGame(gameCopy);
         setFen(gameCopy.fen());
 
-        if (moveRes && moveRes.captured) playCaptureSound();
+        if (moveRes && (moveRes.san.includes('+') || moveRes.san.includes('#'))) playCheckSound();
+        else if (moveRes && moveRes.captured) playCaptureSound();
         else playMoveSound();
 
         const nextStep = solutionStep + 1;
