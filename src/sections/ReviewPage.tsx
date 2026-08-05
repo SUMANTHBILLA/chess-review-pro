@@ -14,6 +14,7 @@ import ExplorePanel from '@/components/ExplorePanel';
 import { ReviewSummary } from '@/components/ReviewSummary';
 import { TacticRetryModal } from '@/components/TacticRetryModal';
 import { CLASSIFICATION_COLORS } from '@/utils/classification';
+import { playMoveSound, playCaptureSound, playCheckSound, playBlunderSound, playBrilliantSound } from '@/utils/soundEffects';
 
 interface Props {
   game: ParsedGame;
@@ -400,9 +401,21 @@ export function ReviewPage({ game, review }: Props) {
 
   const moveTo = useCallback((targetPly: number) => {
     const clamped = Math.max(0, Math.min(targetPly, totalPlies));
-    setCmi(clamped);
-    setShowBestMove(false);
-  }, [totalPlies]);
+    if (clamped !== cmi) {
+      setCmi(clamped);
+      setShowBestMove(false);
+      const detail = getMoveAtPly(clamped);
+      if (detail) {
+        if (detail.classification === 'brilliant') playBrilliantSound();
+        else if (detail.classification === 'blunder' || detail.classification === 'miss') playBlunderSound();
+        else if (detail.san.includes('+') || detail.san.includes('#')) playCheckSound();
+        else if (detail.san.includes('x')) playCaptureSound();
+        else playMoveSound();
+      } else {
+        playMoveSound();
+      }
+    }
+  }, [cmi, totalPlies, getMoveAtPly]);
 
   const handleRetryMistakes = () => {
     const priority: MoveClassification[] = ['blunder', 'mistake', 'miss'];
