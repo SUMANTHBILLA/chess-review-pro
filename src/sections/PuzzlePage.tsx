@@ -125,9 +125,18 @@ async function getPuzzleDataset(): Promise<any[]> {
   datasetLoad = (async () => {
     try {
       const res = await fetch('/puzzles.json');
-      fullDataset = await res.json();
-      return fullDataset || [];
-    } catch { return []; }
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      if (Array.isArray(data) && data.length > 0) {
+        fullDataset = data;
+        return fullDataset;
+      }
+      throw new Error('Empty puzzle dataset');
+    } catch (err) {
+      datasetLoad = null;
+      console.warn('Failed to load puzzle dataset:', err);
+      return [];
+    }
   })();
   return datasetLoad;
 }

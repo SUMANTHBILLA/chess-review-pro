@@ -328,24 +328,30 @@ export function ReviewPage({ game, review }: Props) {
     return review.keyMoments.find(k => k.moveNumber === moveNumber && k.side === side) ?? null;
   }, [cmi, review.keyMoments]);
 
+  const plyFens = useMemo(() => {
+    const fens: string[] = ['rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'];
+    const ch = new Chess();
+    for (const mp of review.moves) {
+      try { ch.move(mp.white.san); fens.push(ch.fen()); } catch { break; }
+      if (mp.black) {
+        try { ch.move(mp.black.san); fens.push(ch.fen()); } catch { break; }
+      }
+    }
+    return fens;
+  }, [review.moves]);
+
   useEffect(() => {
     saveReviewToStats(review, game);
   }, [review, game]);
 
   useEffect(() => {
-    const ch = new Chess();
-    let cnt = 0;
     const targetPly = (showBestMove && cmi > 0) ? cmi - 1 : cmi;
-
-    for (const mp of review.moves) {
-      if (cnt >= targetPly) break;
-      try { ch.move(mp.white.san); cnt++; } catch { break; }
-      if (mp.black && cnt < targetPly) { try { ch.move(mp.black.san); cnt++; } catch { break; } }
-    }
+    const baseFen = plyFens[targetPly] || 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
 
     if (showBestMove && cmi > 0) {
       const detail = getMoveAtPly(cmi);
       if (detail) {
+        const ch = new Chess(baseFen);
         let moveRes = null;
         if (detail.bestMoveSan) {
           try { moveRes = ch.move(detail.bestMoveSan); } catch { /* ignore */ }
@@ -370,8 +376,8 @@ export function ReviewPage({ game, review }: Props) {
       setBestMoveSquareStyles({});
     }
 
-    setCf(ch.fen());
-  }, [cmi, review.moves, showBestMove, getMoveAtPly]);
+    setCf(baseFen);
+  }, [cmi, showBestMove, getMoveAtPly, plyFens]);
 
   const lastMoveSquareStyles = useMemo(() => {
     if (showBestMove || !currentDetail || !currentDetail.uci || currentDetail.uci.length < 4) return {};
@@ -417,17 +423,15 @@ export function ReviewPage({ game, review }: Props) {
 
   const fenBeforeMiss = useMemo(() => {
     if (cmi === 0 || currentDetail?.classification !== 'miss') return null;
-    const ch = new Chess();
-    let count = 0;
-    for (const m of game.moves) {
-      if (count >= cmi - 1) break;
-      try { ch.move(m); count++; } catch { break; }
-    }
-    return ch.fen();
-  }, [cmi, currentDetail, game.moves]);
+    return plyFens[cmi - 1] || null;
+  }, [cmi, currentDetail, plyFens]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) {
+        return;
+      }
       if (e.key === 'ArrowLeft') moveTo(cmi - 1);
       else if (e.key === 'ArrowRight') moveTo(cmi + 1);
       else if (e.key === 'Home') moveTo(0);

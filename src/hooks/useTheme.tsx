@@ -129,7 +129,12 @@ export function Piece3D({ src, fallbackSrc }: { src: string; fallbackSrc?: strin
   );
 }
 
+const PIECE_COMPONENT_CACHE = new Map<string, Record<string, () => ReactElement>>();
+
 export function buildPieceRenderObject(pieceSet: string): Record<string, () => ReactElement> {
+  const cached = PIECE_COMPONENT_CACHE.get(pieceSet);
+  if (cached) return cached;
+
   const srcSet = resolvePieceSet(pieceSet);
   const is3D = is3DPieceSet(pieceSet);
   const pieces: Record<string, () => ReactElement> = {};
@@ -138,9 +143,12 @@ export function buildPieceRenderObject(pieceSet: string): Record<string, () => R
       const key = `${color}${name}`;
       const src = buildPieceUrl(srcSet, color, name);
       const fallbackSrc = PIECE_FALLBACKS[key];
-      pieces[key] = () => (is3D ? <Piece3D src={src} fallbackSrc={fallbackSrc} /> : <PieceImg src={src} fallbackSrc={fallbackSrc} />);
+      pieces[key] = function CustomPiece() {
+        return is3D ? <Piece3D src={src} fallbackSrc={fallbackSrc} /> : <PieceImg src={src} fallbackSrc={fallbackSrc} />;
+      };
     }
   }
+  PIECE_COMPONENT_CACHE.set(pieceSet, pieces);
   return pieces;
 }
 

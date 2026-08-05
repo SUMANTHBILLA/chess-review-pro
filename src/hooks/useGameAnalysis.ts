@@ -159,9 +159,22 @@ export function useGameAnalysis() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [progress, setProgress] = useState(0);
   const [review, setReview] = useState<GameReview | null>(null);
+  const currentAnalysisIdRef = useRef<number>(0);
+
+  const cancelAnalysis = useCallback(() => {
+    currentAnalysisIdRef.current = 0;
+    setIsAnalyzing(false);
+    setProgress(0);
+  }, []);
 
   const analyzeGame = useCallback(
-    async (game: ParsedGame, engine: { analyzePosition: (fen: string, opts?: { depth?: number; movetime?: number }) => Promise<EngineAnalysis> }) => {
+    async (
+      game: ParsedGame,
+      engine: { analyzePosition: (fen: string, opts?: { depth?: number; movetime?: number }) => Promise<EngineAnalysis> }
+    ) => {
+      const analysisId = Date.now();
+      currentAnalysisIdRef.current = analysisId;
+
       // 1. Check if a cached analysis already exists for this exact game move sequence
       const cached = getCachedGameReview(game);
       if (cached) {
@@ -186,6 +199,10 @@ export function useGameAnalysis() {
         let prevEval = positionAnalysis.evaluation;
 
         for (let i = 0; i < game.moves.length; i += 2) {
+          if (currentAnalysisIdRef.current !== analysisId) {
+            return null;
+          }
+
           const moveNumber = Math.floor(i / 2) + 1;
           const whiteMoveSan = game.moves[i];
           const blackMoveSan = game.moves[i + 1];
@@ -207,6 +224,8 @@ export function useGameAnalysis() {
           const cfgW = pickDepth(i + 1, pcW);
           positionAnalysis = await engine.analyzePosition(whiteFen, cfgW);
           const whiteEval = positionAnalysis.evaluation;
+
+          if (currentAnalysisIdRef.current !== analysisId) return null;
 
           const isWhiteBest = whiteBestUci ? whiteBestUci === whiteUci : false;
           const whiteClassification = classifyMove(fenBeforeWhite, prevEval, whiteEval, 'w', isWhiteBest, whiteMoveSan, isWhiteBook);
@@ -236,6 +255,8 @@ export function useGameAnalysis() {
             positionAnalysis = await engine.analyzePosition(blackFen, cfgB);
             const blackEval = positionAnalysis.evaluation;
 
+            if (currentAnalysisIdRef.current !== analysisId) return null;
+
             const isBlackBest = blackBestUci ? blackBestUci === blackUci : false;
             const blackClassification = classifyMove(fenBeforeBlack, whiteEval, blackEval, 'b', isBlackBest, blackMoveSan, isBlackBook);
             blackDetail = { san: blackMoveSan, uci: blackUci, fen: blackFen, eval: blackEval, classification: blackClassification, bestMoveUci: blackBestUci, bestMoveSan: blackBestSan };
@@ -250,6 +271,8 @@ export function useGameAnalysis() {
           setProgress(Math.round(((i + 2) / game.moves.length) * 100));
         }
 
+        if (currentAnalysisIdRef.current !== analysisId) return null;
+
         const wc = getClassifications(analyzedMoves, 'white');
         const bc = getClassifications(analyzedMoves, 'black');
         const wa = calculateAccuracy(wc);
@@ -263,7 +286,7 @@ export function useGameAnalysis() {
           ? game.opening
           : (detectedOpening || game.opening || 'Unknown Opening');
 
-        const review: GameReview = {
+        const reviewResult: GameReview = {
           white: { name: game.white, rating: game.whiteRating || we, accuracy: wa, estimatedRating: we, accuracies: wc },
           black: { name: game.black, rating: game.blackRating || be, accuracy: ba, estimatedRating: be, accuracies: bc },
           moves: analyzedMoves,
@@ -273,16 +296,20 @@ export function useGameAnalysis() {
           keyMoments: keyMoments.slice(0, 10),
         };
 
-        setReview(review);
-        saveReviewToStats(review, game);
+        setReview(reviewResult);
+        saveReviewToStats(reviewResult, game);
         setProgress(100);
-        return review;
-      } finally { setIsAnalyzing(false); }
+        return reviewResult;
+      } finally {
+        if (currentAnalysisIdRef.current === analysisId) {
+          setIsAnalyzing(false);
+        }
+      }
     },
     [],
   );
 
-  return { isAnalyzing, progress, review, analyzeGame };
+  return { isAnalyzing, progress, review, analyzeGame, cancelAnalysis };
 }
 
 function countPieces(fen: string): number {
